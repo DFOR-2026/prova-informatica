@@ -1326,6 +1326,15 @@ async function realizarLogin(){
 document.getElementById("startBtn").onclick = realizarLogin;
 document.getElementById("codeIn").addEventListener("keydown",e=>{
   if(e.key==="Enter") realizarLogin(); });
+document.getElementById("codeIn").addEventListener("input", e => {
+  let v = e.target.value.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+  if (v.length > 4) {
+    v = v.substring(0, 4) + "-" + v.substring(4, 8);
+  } else {
+    v = v.substring(0, 4);
+  }
+  e.target.value = v;
+});
 
 /* ---- entrega ---- */
 async function terminar(){
@@ -1368,7 +1377,7 @@ async function entregar(auto){
        <div class="comp">${r.comprovativo}</div>
        <p>Guarde este código de comprovativo. <b>O resultado não é apresentado aqui</b> — será comunicado pela entidade organizadora.</p>
        <p style="margin-top:10px">Pode agora levantar-se e sair da sala.</p>`,
-      `<button onclick="window.print()">Imprimir comprovativo</button>`);
+      "");
   }catch(e){
     mostrarFim("Não foi possível entregar",
       `<p>A prova <b>não</b> chegou ao servidor: ${e.message}</p>

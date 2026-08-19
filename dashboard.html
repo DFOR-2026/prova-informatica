@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Painel de Classificações — Teste CMS</title>
+  <style>
+    :root {
+      --ink: #16232B;
+      --ink2: #42555F;
+      --paper: #FFFFFF;
+      --surface: #F4F7F6;
+      --surface2: #EAEFEE;
+      --regra: #D7E0DE;
+      --accent: #1E6E48;
+      --accent-dark: #155036;
+      --ui: "Segoe UI", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--ui); color: var(--ink); background: var(--surface); padding: 20px; }
+    
+    header { max-width: 1200px; margin: 0 auto 20px; display: flex; justify-content: space-between; align-items: center; }
+    h1 { font-size: 22px; font-weight: 600; color: var(--ink); }
+    .sub { font-size: 14px; color: var(--ink2); }
+    
+    .actions { display: flex; gap: 10px; }
+    .btn { padding: 8px 16px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; }
+    .btn-pri { background: var(--accent); color: var(--paper); }
+    .btn-pri:hover { background: var(--accent-dark); }
+    .btn-sec { background: var(--surface2); color: var(--ink); border: 1px solid var(--regra); }
+    .btn-sec:hover { background: #dce3e1; }
+
+    .search-box { margin-bottom: 20px; max-width: 1200px; margin-left: auto; margin-right: auto; }
+    .search-box input { width: 100%; max-width: 400px; padding: 8px 12px; border: 1px solid var(--regra); border-radius: 6px; font-size: 14px; outline: none; }
+    
+    .container { max-width: 1200px; margin: 0 auto; background: var(--paper); border-radius: 8px; border: 1px solid var(--regra); overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: flex; flex-direction: column; }
+    
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th, td { padding: 12px 16px; border-bottom: 1px solid var(--regra); font-size: 14px; }
+    th { background: var(--surface); font-weight: 600; color: var(--ink2); }
+    tr:hover { background: #fafcfa; cursor: pointer; }
+    
+    .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+    .badge-win { background: #e8f5e9; color: #2e7d32; }
+    .badge-total { background: #e3f2fd; color: #1565c0; font-size: 13px; }
+
+    /* Overlay do PIN */
+    #pinOverlay { position: fixed; inset: 0; background: var(--ink); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .pin-box { background: var(--paper); padding: 30px; border-radius: 8px; max-width: 400px; width: 100%; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+    .pin-box h2 { font-size: 18px; margin-bottom: 10px; }
+    .pin-box p { font-size: 13px; color: var(--ink2); margin-bottom: 20px; }
+    .pin-box input { width: 100%; padding: 10px; border: 1px solid var(--regra); border-radius: 6px; text-align: center; font-size: 18px; letter-spacing: 4px; margin-bottom: 15px; outline: none; }
+    .pin-box .err { color: #A62B21; font-size: 13px; margin-bottom: 10px; display: none; }
+
+    /* Modal do Detalhe */
+    .veil { position: fixed; inset: 0; background: rgba(22, 35, 43, 0.62); z-index: 500; display: none; align-items: center; justify-content: center; padding: 20px; }
+    .veil.show { display: flex; }
+    .modal { background: var(--paper); width: 100%; max-width: 700px; max-height: 90vh; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+    .modal-head { padding: 20px; border-bottom: 1px solid var(--regra); display: flex; justify-content: space-between; align-items: center; }
+    .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+    .modal-foot { padding: 15px 20px; border-top: 1px solid var(--regra); display: flex; justify-content: flex-end; }
+    .close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--ink2); }
+
+    /* Conteúdo da Auditoria */
+    .audit-section { margin-bottom: 20px; }
+    .audit-section h3 { font-size: 15px; font-weight: 600; padding-bottom: 6px; border-bottom: 2px solid var(--regra); margin-bottom: 10px; color: var(--accent); }
+    .audit-item { display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px dashed var(--regra); font-size: 13px; }
+    .audit-item:last-child { border-bottom: none; }
+    .audit-label { font-weight: 500; color: var(--ink); }
+    .audit-info { text-align: right; color: var(--ink2); }
+    .audit-points { font-weight: 600; margin-left: 10px; }
+    .points-ok { color: #2e7d32; }
+    .points-fail { color: #c62828; }
+    .code-block { font-family: monospace; background: var(--surface); padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+  </style>
+</head>
+<body>
+
+  <!-- Overlay para digitação de PIN -->
+  <div id="pinOverlay">
+    <div class="pin-box">
+      <h2>Acesso Administrativo</h2>
+      <p>Introduza o PIN do Vigilante para aceder ao Painel de Classificações.</p>
+      <input type="password" id="pinIn" placeholder="••••" maxlength="8">
+      <div class="err" id="pinErr">PIN incorreto. Tente novamente.</div>
+      <button class="btn btn-pri" style="width: 100%; justify-content: center;" id="pinBtn">Entrar</button>
+    </div>
+  </div>
+
+  <!-- Cabeçalho Principal -->
+  <header>
+    <div>
+      <h1>Painel de Classificações</h1>
+      <div class="sub">Auditoria e Exportação de Resultados do Teste CMS</div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-sec" id="btnRefresh">Atualizar ↻</button>
+      <button class="btn btn-pri" id="btnExport">Exportar CSV 📥</button>
+    </div>
+  </header>
+
+  <!-- Filtro de Pesquisa -->
+  <div class="search-box">
+    <input type="text" id="searchIn" placeholder="Pesquisar por candidato ou código...">
+  </div>
+
+  <!-- Tabela de Resultados -->
+  <div class="container">
+    <table id="resTable">
+      <thead>
+        <tr>
+          <th>Comprovativo</th>
+          <th>Código</th>
+          <th>Candidato</th>
+          <th>Windows (Teórica)</th>
+          <th>Word (Prática)</th>
+          <th>Excel (Prática)</th>
+          <th>Nota Final (0 a 8.00)</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <tr>
+          <td colspan="7" style="text-align: center; color: var(--ink2);">Nenhum resultado carregado.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal de Auditoria Vertical Detalhada -->
+  <div class="veil" id="auditVeil">
+    <div class="modal">
+      <div class="modal-head">
+        <h2 id="modalTitle">Detalhe da Correção</h2>
+        <button class="close-btn" id="auditClose">×</button>
+      </div>
+      <div class="modal-body" id="auditBody">
+        <!-- Conteúdo inserido dinamicamente via JS -->
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-pri" id="auditCloseBtn">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const CONFIG = {
+      URL: "https://oudidkfxugljpgdvhxgt.supabase.co"
+    };
+
+    let resultadosCache = [];
+    let savedPin = "";
+
+    // 1. Ação de Login do Vigilante
+    document.getElementById("pinBtn").onclick = fazerLogin;
+    document.getElementById("pinIn").addEventListener("keydown", e => { if (e.key === "Enter") fazerLogin(); });
+
+    async function fazerLogin() {
+      const pin = document.getElementById("pinIn").value.trim();
+      const errEl = document.getElementById("pinErr");
+      errEl.style.display = "none";
+
+      if (!pin) return;
+
+      try {
+        const response = await fetch(`${CONFIG.URL}/functions/v1/resultados`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pin })
+        });
+
+        const res = await response.json();
+        
+        if (!response.ok) {
+          errEl.textContent = res.erro || "Erro de autenticação.";
+          errEl.style.display = "block";
+          return;
+        }
+
+        savedPin = pin;
+        resultadosCache = res.resultados || [];
+        document.getElementById("pinOverlay").style.display = "none";
+        renderizarTabela();
+
+      } catch (err) {
+        errEl.textContent = "Erro ao ligar ao servidor. Verifique a rede.";
+        errEl.style.display = "block";
+      }
+    }
+
+    // 2. Sincronizar/Atualizar Dados
+    document.getElementById("btnRefresh").onclick = async () => {
+      if (!savedPin) return;
+      try {
+        const response = await fetch(`${CONFIG.URL}/functions/v1/resultados`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pin: savedPin })
+        });
+        const res = await response.json();
+        if (response.ok) {
+          resultadosCache = res.resultados || [];
+          renderizarTabela();
+        }
+      } catch (e) {
+        alert("Não foi possível atualizar os dados.");
+      }
+    };
+
+    // 3. Renderizar a Tabela Principal
+    function renderizarTabela() {
+      const query = document.getElementById("searchIn").value.trim().toLowerCase();
+      const body = document.getElementById("tableBody");
+      body.innerHTML = "";
+
+      const filtrados = resultadosCache.filter(r => 
+        r.nome_candidato.toLowerCase().includes(query) || 
+        r.codigo.toLowerCase().includes(query) ||
+        r.comprovativo.toLowerCase().includes(query)
+      );
+
+      if (filtrados.length === 0) {
+        body.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--ink2);">Nenhum resultado encontrado.</td></tr>`;
+        return;
+      }
+
+      filtrados.forEach(r => {
+        const tr = document.createElement("tr");
+        tr.onclick = () => mostrarDetalhes(r);
+        tr.innerHTML = `
+          <td><b>${r.comprovativo}</b></td>
+          <td><span class="code-block">${r.codigo}</span></td>
+          <td>${r.nome_candidato}</td>
+          <td>${Number(r.nota_windows).toFixed(2)} val</td>
+          <td>${Number(r.nota_word).toFixed(2)} val</td>
+          <td>${Number(r.nota_excel).toFixed(2)} val</td>
+          <td><span class="badge badge-total">${Number(r.nota_final).toFixed(2)} / 8.00</span></td>
+        `;
+        body.appendChild(tr);
+      });
+    }
+
+    // Pesquisa Dinâmica
+    document.getElementById("searchIn").oninput = renderizarTabela;
+
+    // 4. Mostrar Detalhes da Correção (Vertical e Amigável)
+    function mostrarDetalhes(r) {
+      const title = document.getElementById("modalTitle");
+      const body = document.getElementById("auditBody");
+      
+      title.textContent = `Auditoria: ${r.nome_candidato} (${r.comprovativo})`;
+      body.innerHTML = "";
+
+      const det = r.detalhe_correcao || {};
+      
+      // -- Seção Windows --
+      const winSec = document.createElement("div");
+      winSec.className = "audit-section";
+      winSec.innerHTML = `<h3>Componente Windows (Teoria) — Nota: ${Number(r.nota_windows).toFixed(2)} val</h3>`;
+      
+      if (det.windows && Array.isArray(det.windows.perguntas)) {
+        det.windows.perguntas.forEach((q, idx) => {
+          const item = document.createElement("div");
+          item.className = "audit-item";
+          const resCandidato = q.resposta === null ? "<i>Sem resposta</i>" : `Opção ${q.resposta + 1}`;
+          const status = q.correta ? "✓ Correto" : `✗ Incorreto (Correta: Opção ${q.correta_idx + 1})`;
+          const ptsClass = q.correta ? "points-ok" : "points-fail";
+          item.innerHTML = `
+            <div class="audit-label">P${idx + 1}: ${q.enunciado}</div>
+            <div class="audit-info">
+              <span>Resposta: ${resCandidato} | <b>${status}</b></span>
+              <span class="audit-points ${ptsClass}">+${Number(q.pontos).toFixed(2)} val</span>
+            </div>
+          `;
+          winSec.appendChild(item);
+        });
+      } else {
+        winSec.innerHTML += `<p style="padding: 8px 12px; font-size:13px; color:var(--ink2);">Sem detalhes de auditoria de Windows.</p>`;
+      }
+      body.appendChild(winSec);
+
+      // -- Seção Word --
+      const wordSec = document.createElement("div");
+      wordSec.className = "audit-section";
+      wordSec.innerHTML = `<h3>Componente Word (Texto) — Nota: ${Number(r.nota_word).toFixed(2)} val</h3>`;
+      
+      if (det.word && Array.isArray(det.word.tarefas)) {
+        det.word.tarefas.forEach((t) => {
+          const item = document.createElement("div");
+          item.className = "audit-item";
+          const ptsClass = t.pontos > 0 ? "points-ok" : "points-fail";
+          
+          let detStr = "";
+          if (t.detalhe) {
+            detStr = `<br><small style="color:var(--ink2);">Esperado: <span class="code-block">${t.detalhe.esperado}</span> | Obtido: <span class="code-block">${t.detalhe.obtido}</span></small>`;
+          }
+          
+          item.innerHTML = `
+            <div class="audit-label">Tarefa: ${t.nome}${detStr}</div>
+            <div class="audit-info">
+              <span>${t.status === "correto" ? "✓ Correto" : "✗ Incorreto"}</span>
+              <span class="audit-points ${ptsClass}">+${Number(t.pontos).toFixed(2)} val</span>
+            </div>
+          `;
+          wordSec.appendChild(item);
+        });
+      } else {
+        wordSec.innerHTML += `<p style="padding: 8px 12px; font-size:13px; color:var(--ink2);">Sem detalhes de auditoria de Word.</p>`;
+      }
+      body.appendChild(wordSec);
+
+      // -- Seção Excel --
+      const xlSec = document.createElement("div");
+      xlSec.className = "audit-section";
+      xlSec.innerHTML = `<h3>Componente Excel (Folha de Cálculo) — Nota: ${Number(r.nota_excel).toFixed(2)} val</h3>`;
+      
+      if (det.excel && Array.isArray(det.excel.tarefas)) {
+        det.excel.tarefas.forEach((t) => {
+          const item = document.createElement("div");
+          item.className = "audit-item";
+          const ptsClass = t.pontos > 0 ? "points-ok" : "points-fail";
+          
+          let detStr = "";
+          if (t.detalhe) {
+            detStr = `<br><small style="color:var(--ink2);">Esperado: <span class="code-block">${t.detalhe.esperado}</span> | Obtido: <span class="code-block">${t.detalhe.obtido}</span></small>`;
+          }
+
+          item.innerHTML = `
+            <div class="audit-label">Tarefa: ${t.nome}${detStr}</div>
+            <div class="audit-info">
+              <span>${t.status === "correto" ? "✓ Correto" : "✗ Incorreto"}</span>
+              <span class="audit-points ${ptsClass}">+${Number(t.pontos).toFixed(2)} val</span>
+            </div>
+          `;
+          xlSec.appendChild(item);
+        });
+      } else {
+        xlSec.innerHTML += `<p style="padding: 8px 12px; font-size:13px; color:var(--ink2);">Sem detalhes de auditoria de Excel.</p>`;
+      }
+      body.appendChild(xlSec);
+
+      document.getElementById("auditVeil").classList.add("show");
+    }
+
+    // Fechar Modal
+    const fecharModal = () => document.getElementById("auditVeil").classList.remove("show");
+    document.getElementById("auditClose").onclick = fecharModal;
+    document.getElementById("auditCloseBtn").onclick = fecharModal;
+
+    // 5. Exportar Tabela para Ficheiro CSV Limpo e Organizado
+    document.getElementById("btnExport").onclick = () => {
+      if (resultadosCache.length === 0) return;
+      
+      let csv = "\uFEFF"; // BOM para o Excel ler caracteres em português corretamente
+      csv += "Comprovativo;Codigo;Nome Candidato;Nota Windows;Nota Word;Nota Excel;Nota Final\n";
+      
+      resultadosCache.forEach(r => {
+        csv += `${r.comprovativo};${r.codigo};${r.nome_candidato};${Number(r.nota_windows).toFixed(2)};${Number(r.nota_word).toFixed(2)};${Number(r.nota_excel).toFixed(2)};${Number(r.nota_final).toFixed(2)}\n`;
+      });
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute("download", `pauta_classificacao_teste.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
+  </script>
+</body>
+</html>
