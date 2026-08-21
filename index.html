@@ -447,6 +447,7 @@ table.res td.n{font-family:var(--mono);font-variant-numeric:tabular-nums}
         </div><div class="gname">Esquema da Página</div></div>
         <div class="sep"></div>
         <div class="rgroup"><div class="rr">
+          <button class="tool" id="wUndo" title="Desfazer a última ação" disabled>Desfazer</button>
           <button class="tool" id="wSort">Ordenar A→Z</button>
           <button class="tool" id="wDel">Eliminar</button>
         </div><div class="gname">Edição</div></div>
@@ -666,6 +667,34 @@ function aplicarImagem(im,g){
 window.SEMIMG=semImagem;
 
 const doc={marginLeft:3.0,blocks:[]};
+const wordHistory=[];
+let isUndoing=false;
+function saveWordState(){
+  if(isUndoing) return;
+  const state=JSON.parse(JSON.stringify(doc));
+  if(wordHistory.length>0){
+    const last=wordHistory[wordHistory.length-1];
+    if(JSON.stringify(last)===JSON.stringify(state)) return;
+  }
+  wordHistory.push(state);
+  if(wordHistory.length>50) wordHistory.shift();
+  updateUndoButton();
+}
+function undoWord(){
+  if(wordHistory.length<=1) return;
+  isUndoing=true;
+  wordHistory.pop();
+  const prevState=JSON.parse(JSON.stringify(wordHistory[wordHistory.length-1]));
+  doc.marginLeft=prevState.marginLeft;
+  doc.blocks=prevState.blocks;
+  renderDoc();
+  isUndoing=false;
+  updateUndoButton();
+}
+function updateUndoButton(){
+  const undoBtn=document.getElementById("wUndo");
+  if(undoBtn) undoBtn.disabled=(wordHistory.length<=1);
+}
 function P(t,o){ return Object.assign({t:"p",text:t,ff:"Times New Roman",fs:12,b:false,i:false,u:false,
   col:"#000000",al:"left",ind:0,lh:1,bd:""},o||{}); }
 doc.blocks=[
@@ -714,6 +743,7 @@ function renderDoc(){
       el=document.createElement("div"); el.className="blk"; el.dataset.t="p";
       el.contentEditable="true"; el.textContent=b.text; styleBlk(el,b,i);
       el.addEventListener("input",()=>{ b.text=el.textContent; });
+      el.addEventListener("blur",()=>{ saveWordState(); });
       el.addEventListener("keydown",ev=>{
         if(ev.key==="Enter"){ ev.preventDefault();
           const acima = cursorNoInicio(el) && el.textContent.length>0;
@@ -738,6 +768,7 @@ function renderDoc(){
         row.forEach((tx,ci)=>{ const td=document.createElement("td");
           td.contentEditable="true"; td.textContent=tx;
           td.addEventListener("input",()=>{ b.rows[ri][ci]=td.textContent; });
+          td.addEventListener("blur",()=>{ saveWordState(); });
           td.addEventListener("mousedown",ev=>ev.stopPropagation());
           tr.appendChild(td); });
         t.appendChild(tr); });
@@ -747,7 +778,7 @@ function renderDoc(){
     el.addEventListener("mousedown",ev=>{ if(ev.shiftKey){ wB=i; ev.preventDefault(); } else { wA=wB=i; }
       refreshSel(); syncWordTools(); });
     page.appendChild(el); });
-  syncWordTools(); }
+  syncWordTools(); saveWordState(); }
 function cursorNoInicio(el){
   const sel=window.getSelection();
   if(!sel||!sel.rangeCount) return false;
@@ -771,7 +802,7 @@ function applyW(f){ const [a,z]=wRange();
   for(let i=a;i<=z;i++){ const b=doc.blocks[i]; if(b.t==="p") f(b); }
   page.querySelectorAll('.blk[data-t="p"]').forEach(el=>{ const i=+el.dataset.i;
     styleBlk(el,doc.blocks[i]||{t:"x"},i); });
-  syncWordTools(); }
+  syncWordTools(); saveWordState(); }
 function curBlk(){ const b=doc.blocks[wRange()[0]]; return (b&&b.t==="p")?b:null; }
 function syncWordTools(){ const b=curBlk();
   document.querySelectorAll("[data-w]").forEach(x=>x.classList.toggle("on",b?!!b[x.dataset.w]:false));
@@ -818,6 +849,7 @@ document.getElementById("wLinha").onclick=()=>{
   novoParagrafo(a, doc.blocks[a] && doc.blocks[a].t==="p" ? doc.blocks[a] : null);
 };
 document.getElementById("wBreak").onclick=()=>{ doc.blocks.splice(wRange()[1]+1,0,{t:"break"}); wA=wB=wRange()[1]+1; renderDoc(); };
+document.getElementById("wUndo").onclick=()=>undoWord();
 document.getElementById("wDel").onclick=()=>{ const [a,z]=wRange(); if(doc.blocks.length<=1) return;
   doc.blocks.splice(a,z-a+1); wA=wB=Math.max(0,a-1); renderDoc(); };
 document.getElementById("wImg").onclick=async()=>{
