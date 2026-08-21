@@ -320,7 +320,7 @@ table.res td.n{font-family:var(--mono);font-variant-numeric:tabular-nums}
       <h2>Antes de começar</h2>
       <ul>
         <li>A prova tem <strong>60 minutos</strong> e é entregue automaticamente quando o tempo terminar.</li>
-        <li>Vale <strong>8 valores</strong>: Windows 2, Word 3, Excel 3.</li>
+        <li>Vale <strong>8 valores</strong>: Windows 1,5, Word 2,5, Excel 4.</li>
         <li>Percorre três componentes por ordem, com botões de avanço e recuo.</li>
         <li><strong>Nenhuma tarefa é obrigatória.</strong> O que não fizer não conta e não impede a entrega.</li>
       </ul>
@@ -348,9 +348,9 @@ table.res td.n{font-family:var(--mono);font-variant-numeric:tabular-nums}
   <div class="panel on" id="winPanel">
     <div class="quizwrap">
       <div class="quizhead">
-        <div class="kicker">Componente 1 de 3 · 2,00 valores</div>
+        <div class="kicker">Componente 1 de 3 · 1,50 valores</div>
         <h2>Windows</h2>
-        <p>Dez perguntas de escolha única, 0,20 valores cada. Responda pela ordem que quiser, salte as que entender e volte atrás sempre que precisar.</p>
+        <p>Dez perguntas de escolha única, 0,15 valores cada. Responda pela ordem que quiser, salte as que entender e volte atrás sempre que precisar.</p>
       </div>
       <div class="qnav" id="qnav"></div>
       <div class="qcard" id="qcard"></div>
@@ -410,7 +410,7 @@ table.res td.n{font-family:var(--mono);font-variant-numeric:tabular-nums}
       <div class="th">
         <div class="kicker">Componente 2 de 3</div>
         <h2>Tarefas a executar — Word</h2>
-        <div class="meta"><span><b>12</b> tarefas</span><span><b>3,00</b> valores</span><span>Nenhuma obrigatória</span></div>
+        <div class="meta"><span><b>12</b> tarefas</span><span><b>2,50</b> valores</span><span>Nenhuma obrigatória</span></div>
       </div>
       <div class="tasklist" id="wordTasks"></div>
       <div class="tf"><small>O documento abre já com o texto escrito. O seu trabalho é formatá-lo e completá-lo.</small></div>
@@ -456,7 +456,7 @@ table.res td.n{font-family:var(--mono);font-variant-numeric:tabular-nums}
       <div class="th">
         <div class="kicker">Componente 3 de 3</div>
         <h2>Tarefas a executar — Excel</h2>
-        <div class="meta"><span><b>9</b> tarefas</span><span><b>3,00</b> valores</span><span>Nenhuma obrigatória</span></div>
+        <div class="meta"><span><b>10</b> tarefas</span><span><b>4,00</b> valores</span><span>Nenhuma obrigatória</span></div>
       </div>
       <div class="tasklist" id="xlTasks"></div>
       <div class="tf"><small><b>Para construir uma fórmula:</b> escreva <code>=</code> e clique nas células que quer usar — a referência é inserida sozinha. Arraste para selecionar um intervalo. Separador de argumentos: <b>;</b></small></div>
@@ -729,17 +729,17 @@ const miniTabela=`<table class="mini"><tr><th>Formandos</th><th>Windows</th><th>
   ${TAB_DADOS.map(r=>`<tr><td>${r[0]}</td><td class="n">${r[1]}</td><td class="n">${r[2]}</td><td class="n">${r[3]}</td></tr>`).join("")}</table>`;
 
 const WORD_TASKS=[
- {t:"Tipo e tamanho de letra",c:0.35,d:"Aplique <code>Calibri</code>, tamanho <code>11</code>, aos quatro parágrafos do texto."},
- {t:"Avanço de parágrafo",c:0.25,d:"Aplique um avanço de <code>1,0 cm</code> aos quatro parágrafos."},
- {t:"Espaçamento entre linhas",c:0.25,d:"Aplique espaçamento de <code>1,15</code> aos quatro parágrafos."},
- {t:"Itálico e cor do texto",c:0.20,d:"Coloque os quatro parágrafos em itálico e mude a cor do tipo de letra para uma cor diferente de preto."},
- {t:"Linha de identificação",c:0.20,d:`Acrescente, a seguir ao último parágrafo, uma nova linha com o texto:<br><code>${ASSINATURA}</code><br>Alinhe essa linha à direita.`},
- {t:"Limites do texto",c:0.20,d:"Aplique limites (contorno) aos quatro parágrafos do texto."},
- {t:"Margem da página",c:0.20,d:"Altere a margem esquerda do documento para <code>2,5 cm</code>."},
- {t:"Inserir fotografia",c:0.35,d:"Insira uma fotografia à sua escolha <b>entre o 2.º e o 3.º parágrafo</b> e alinhe-a <b>à direita</b> da folha."},
- {t:"Título do documento",c:0.35,d:"Leia o texto e crie um <b>título à sua escolha</b>, numa nova linha <b>no início do documento</b>, antes do primeiro parágrafo. Centre-o, coloque-o a <b>negrito</b> e com tamanho de letra <code>16</code>."},
+ {t:"Tipo e tamanho de letra",c:0.30,d:"Aplique <code>Calibri</code>, tamanho <code>11</code>, aos quatro parágrafos do texto."},
+ {t:"Avanço de parágrafo",c:0.20,d:"Aplique um avanço de <code>1,0 cm</code> aos quatro parágrafos."},
+ {t:"Espaçamento entre linhas",c:0.20,d:"Aplique espaçamento de <code>1,15</code> aos quatro parágrafos."},
+ {t:"Itálico e cor do texto",c:0.15,d:"Coloque os quatro parágrafos em itálico e mude a cor do tipo de letra para uma cor diferente de preto."},
+ {t:"Linha de identificação",c:0.15,d:`Acrescente, a seguir ao último parágrafo, uma nova linha com o texto:<br><code>${ASSINATURA}</code><br>Alinhe essa linha à direita.`},
+ {t:"Limites do texto",c:0.20,d:"Selecione os quatro parágrafos e aplique um <b>contorno único</b>, que envolva o texto como um todo — e não uma caixa à volta de cada parágrafo."},
+ {t:"Margem da página",c:0.15,d:"Altere a margem esquerda do documento para <code>2,5 cm</code>."},
+ {t:"Inserir fotografia",c:0.30,d:"Insira uma fotografia à sua escolha <b>entre o 2.º e o 3.º parágrafo</b> e alinhe-a <b>à direita</b> da folha."},
+ {t:"Título do documento",c:0.30,d:"Leia o texto e crie um <b>título à sua escolha</b>, numa nova linha <b>no início do documento</b>, antes do primeiro parágrafo. Centre-o, coloque-o a <b>negrito</b> e com tamanho de letra <code>16</code>."},
  {t:"Quebra de página",c:0.15,d:"Insira uma quebra de página no final do documento."},
- {t:"Criar a tabela",c:0.35,d:"Depois da quebra de página, crie uma tabela com <b>4 colunas e 5 linhas</b> e preencha-a exatamente com estes dados:"+miniTabela},
+ {t:"Criar a tabela",c:0.25,d:"Depois da quebra de página, crie uma tabela com <b>4 colunas e 5 linhas</b> e preencha-a exatamente com estes dados:"+miniTabela},
  {t:"Ordenar a tabela",c:0.15,d:"Ordene as quatro linhas de dados por ordem alfabética do nome, mantendo o cabeçalho no topo."}
 ];
 document.getElementById("wordTasks").innerHTML=WORD_TASKS.map((t,i)=>`
@@ -1112,14 +1112,15 @@ window.addEventListener("resize",()=>drawSel());
 
 const XL_TASKS=[
  {t:"Preço com IVA (E7:E11)",c:0.70,d:"Calcule o preço com IVA de cada artigo, a partir do preço unitário e da taxa em <code>C18</code>. Escreva a fórmula em <code>E7</code> e arraste-a até <code>E11</code> — deve continuar a funcionar em todas as linhas."},
- {t:"Valor total por artigo (G7:G11)",c:0.50,d:"Multiplique o preço com IVA pela quantidade, em cada linha."},
- {t:"Médias (D13 e E13)",c:0.35,d:"Calcule a média dos preços unitários e a média dos preços com IVA, usando a função adequada."},
- {t:"Nº de volumes (F14)",c:0.20,d:"Some as quantidades de todos os artigos."},
- {t:"Valor total da factura (G15)",c:0.20,d:"Some os valores totais dos cinco artigos."},
- {t:"Formatos numéricos",c:0.20,d:"Aplique o formato monetário a <code>D7:E11</code>, <code>G7:G11</code>, <code>D13:E13</code> e <code>G15</code>."},
+ {t:"Valor total por artigo (G7:G11)",c:0.25,d:"Multiplique o preço com IVA pela quantidade, em cada linha."},
+ {t:"Médias (D13 e E13)",c:0.50,d:"Calcule a média dos preços unitários e a média dos preços com IVA, usando a função adequada."},
+ {t:"Nº de volumes (F14)",c:0.25,d:"Some as quantidades de todos os artigos."},
+ {t:"Valor total da factura (G15)",c:0.25,d:"Some os valores totais dos cinco artigos."},
+ {t:"Formatos numéricos",c:0.15,d:"Aplique o formato monetário a <code>D7:E11</code>, <code>G7:G11</code>, <code>D13:E13</code> e <code>G15</code>."},
  {t:"Aspeto do quadro",c:0.10,d:"Una as células <code>B4:G4</code> do título e aplique limites ao quadro de artigos <code>B6:G11</code>."},
- {t:"Estatística — valor mais caro e mais barato",c:0.35,d:"No segundo quadro (linha 21), responda em <code>F28</code> qual o valor do produto mais caro e em <code>F29</code> qual o do mais barato, usando funções."},
- {t:"Estatística com critério — origem Sintra",c:0.40,d:"Em <code>F30</code>, indique a quantidade total de produtos provenientes de Sintra. Em <code>F31</code>, indique quantos produtos diferentes vêm de Sintra. Use funções com critério, sem contar à mão."}
+ {t:"Estatística — valor mais caro e mais barato",c:0.50,d:"No segundo quadro (linha 21), responda em <code>F28</code> qual o valor do produto mais caro e em <code>F29</code> qual o do mais barato, usando funções."},
+ {t:"Estatística com critério — origem Sintra",c:0.50,d:"Em <code>F30</code>, indique a quantidade total de produtos provenientes de Sintra. Em <code>F31</code>, indique quantos produtos diferentes vêm de Sintra. Use funções com critério, sem contar à mão."},
+ {t:"Stock (F22:F25)",c:0.80,d:"Na coluna <code>Stock</code> do segundo quadro, indique para cada produto <code>Comprar</code> se a quantidade for menor que <code>20</code> e, caso contrário, <code>Temos stock</code>. Use uma função que decida sozinha em função da quantidade."}
 ];
 document.getElementById("xlTasks").innerHTML=XL_TASKS.map((t,i)=>`
   <div class="task"><div class="tnum">${i+1}</div><div class="tbody">
@@ -1283,6 +1284,9 @@ async function realizarLogin(){
       `Deseja iniciar a prova de:<br><br><b style="font-size:16px">${r.nome_candidato}</b>`,
       "Sim, sou eu", "Não, cancelar");
     if(!confirmado){
+      if(!r.retomada){
+        try{ await api("cancelar",{sessao_id:r.sessao_id,token:r.token}); }catch(e){}
+      }
       btn.disabled=false; btn.textContent="Iniciar prova";
       pinVigilante = null;
       return;

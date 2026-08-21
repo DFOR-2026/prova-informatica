@@ -293,21 +293,38 @@
       winSec.className = "audit-section";
       winSec.innerHTML = `<h3>Componente Windows (Teoria) — Nota: ${Number(r.nota_windows).toFixed(2)} val</h3>`;
       
-      if (det.windows) {
-        const parts = (det.windows.msg || "").split(", ");
-        parts.forEach(p => {
-          const item = document.createElement("div");
-          item.className = "audit-item";
-          const isOk = p.includes("Correta") && !p.includes("Incorreta");
-          const ptsClass = isOk ? "points-ok" : "points-fail";
-          item.innerHTML = `
-            <div class="audit-label">${p}</div>
-            <div class="audit-info">
-              <span class="audit-points ${ptsClass}">${isOk ? "+0.20 val" : "+0.00 val"}</span>
-            </div>
-          `;
-          winSec.appendChild(item);
-        });
+      if (det.windows && typeof det.windows === "object") {
+        if (Array.isArray(det.windows.det)) {
+          det.windows.det.forEach(q => {
+            const item = document.createElement("div");
+            item.className = "audit-item";
+            const isOk = q.estado === "certa";
+            const ptsClass = isOk ? "points-ok" : "points-fail";
+            const statusTxt = q.estado === "certa" ? "Correta" : (q.estado === "vazia" ? "Não respondida" : (q.estado === "naosei" ? "Não sei" : "Incorreta"));
+            item.innerHTML = `
+              <div class="audit-label">Pergunta ${q.n}: ${statusTxt}</div>
+              <div class="audit-info">
+                <span class="audit-points ${ptsClass}">${isOk ? "+0.15 val" : "+0.00 val"}</span>
+              </div>
+            `;
+            winSec.appendChild(item);
+          });
+        } else {
+          const parts = (det.windows.msg || "").split(", ");
+          parts.forEach(p => {
+            const item = document.createElement("div");
+            item.className = "audit-item";
+            const isOk = p.includes("Correta") && !p.includes("Incorreta");
+            const ptsClass = isOk ? "points-ok" : "points-fail";
+            item.innerHTML = `
+              <div class="audit-label">${p}</div>
+              <div class="audit-info">
+                <span class="audit-points ${ptsClass}">${isOk ? "+0.20 val" : "+0.00 val"}</span>
+              </div>
+            `;
+            winSec.appendChild(item);
+          });
+        }
       } else {
         winSec.innerHTML += `<p style="padding: 8px 12px; font-size:13px; color:var(--ink2);">Sem detalhes de auditoria de Windows.</p>`;
       }
@@ -318,31 +335,50 @@
       wordSec.className = "audit-section";
       wordSec.innerHTML = `<h3>Componente Word (Texto) — Nota: ${Number(r.nota_word).toFixed(2)} val</h3>`;
       
-      let wordHasData = false;
-      for (let idx = 1; idx <= 12; idx++) {
-        const key = `word_t${idx}`;
-        if (det[key]) {
-          wordHasData = true;
-          const t = det[key];
+      if (Array.isArray(det.word)) {
+        det.word.forEach(t => {
           const item = document.createElement("div");
           item.className = "audit-item";
-          const ptsClass = t.nota > 0 ? "points-ok" : "points-fail";
-          const label = WORD_MAP[key] || `Tarefa ${idx}`;
+          const ptsClass = t.pts > 0 ? "points-ok" : "points-fail";
           item.innerHTML = `
             <div class="audit-label">
-              <b>${label}</b>
-              <br><small style="color:var(--ink2);">${t.msg}</small>
+              <b>${t.tarefa}</b>
+              <br><small style="color:var(--ink2);">${t.nota}</small>
             </div>
             <div class="audit-info">
-              <span>${t.ok ? "✓ Correto" : "✗ Incorreto"}</span>
-              <span class="audit-points ${ptsClass}">+${Number(t.nota).toFixed(2)} val</span>
+              <span>${t.cls === 'ok' ? '✓ Correto' : (t.cls === 'part' ? '⚠ Parcial' : '✗ Incorreto')}</span>
+              <span class="audit-points ${ptsClass}">+${Number(t.pts).toFixed(2)} val</span>
             </div>
           `;
           wordSec.appendChild(item);
+        });
+      } else {
+        let wordHasData = false;
+        for (let idx = 1; idx <= 12; idx++) {
+          const key = `word_t${idx}`;
+          if (det[key]) {
+            wordHasData = true;
+            const t = det[key];
+            const item = document.createElement("div");
+            item.className = "audit-item";
+            const ptsClass = t.nota > 0 ? "points-ok" : "points-fail";
+            const label = WORD_MAP[key] || `Tarefa ${idx}`;
+            item.innerHTML = `
+              <div class="audit-label">
+                <b>${label}</b>
+                <br><small style="color:var(--ink2);">${t.msg}</small>
+              </div>
+              <div class="audit-info">
+                <span>${t.ok ? "✓ Correto" : "✗ Incorreto"}</span>
+                <span class="audit-points ${ptsClass}">+${Number(t.nota).toFixed(2)} val</span>
+              </div>
+            `;
+            wordSec.appendChild(item);
+          }
         }
-      }
-      if (!wordHasData) {
-        wordSec.innerHTML += `<p style="padding: 8px 12px; font-size:13px; color:var(--ink2);">Sem detalhes de auditoria de Word.</p>`;
+        if (!wordHasData) {
+          wordSec.innerHTML += `<p style="padding: 8px 12px; font-size:13px; color:var(--ink2);">Sem detalhes de auditoria de Word.</p>`;
+        }
       }
       body.appendChild(wordSec);
 
@@ -351,31 +387,50 @@
       xlSec.className = "audit-section";
       xlSec.innerHTML = `<h3>Componente Excel (Folha de Cálculo) — Nota: ${Number(r.nota_excel).toFixed(2)} val</h3>`;
       
-      let excelHasData = false;
-      for (let idx = 1; idx <= 9; idx++) {
-        const key = `excel_t${idx}`;
-        if (det[key]) {
-          excelHasData = true;
-          const t = det[key];
+      if (Array.isArray(det.excel)) {
+        det.excel.forEach(t => {
           const item = document.createElement("div");
           item.className = "audit-item";
-          const ptsClass = t.nota > 0 ? "points-ok" : "points-fail";
-          const label = EXCEL_MAP[key] || `Tarefa ${idx}`;
+          const ptsClass = t.pts > 0 ? "points-ok" : "points-fail";
           item.innerHTML = `
             <div class="audit-label">
-              <b>${label}</b>
-              <br><small style="color:var(--ink2);">${t.msg}</small>
+              <b>${t.tarefa}</b>
+              <br><small style="color:var(--ink2);">${t.nota}</small>
             </div>
             <div class="audit-info">
-              <span>${t.ok ? "✓ Correto" : "✗ Incorreto"}</span>
-              <span class="audit-points ${ptsClass}">+${Number(t.nota).toFixed(2)} val</span>
+              <span>${t.cls === 'ok' ? '✓ Correto' : (t.cls === 'part' ? '⚠ Parcial' : '✗ Incorreto')}</span>
+              <span class="audit-points ${ptsClass}">+${Number(t.pts).toFixed(2)} val</span>
             </div>
           `;
           xlSec.appendChild(item);
+        });
+      } else {
+        let excelHasData = false;
+        for (let idx = 1; idx <= 9; idx++) {
+          const key = `excel_t${idx}`;
+          if (det[key]) {
+            excelHasData = true;
+            const t = det[key];
+            const item = document.createElement("div");
+            item.className = "audit-item";
+            const ptsClass = t.nota > 0 ? "points-ok" : "points-fail";
+            const label = EXCEL_MAP[key] || `Tarefa ${idx}`;
+            item.innerHTML = `
+              <div class="audit-label">
+                <b>${label}</b>
+                <br><small style="color:var(--ink2);">${t.msg}</small>
+              </div>
+              <div class="audit-info">
+                <span>${t.ok ? "✓ Correto" : "✗ Incorreto"}</span>
+                <span class="audit-points ${ptsClass}">+${Number(t.nota).toFixed(2)} val</span>
+              </div>
+            `;
+            xlSec.appendChild(item);
+          }
         }
-      }
-      if (!excelHasData) {
-        xlSec.innerHTML += `<p style="padding: 8px 12px; font-size:13px; color:var(--ink2);">Sem detalhes de auditoria de Excel.</p>`;
+        if (!excelHasData) {
+          xlSec.innerHTML += `<p style="padding: 8px 12px; font-size:13px; color:var(--ink2);">Sem detalhes de auditoria de Excel.</p>`;
+        }
       }
       body.appendChild(xlSec);
 
@@ -396,7 +451,11 @@
       csv += "Comprovativo;Codigo;Nome Candidato;Nota Windows;Nota Word;Nota Excel;Nota Final\n";
       
       resultadosCache.forEach(r => {
-        csv += `${r.comprovativo};${r.codigo};${r.nome_candidato};${Number(r.nota_windows).toFixed(2)};${Number(r.nota_word).toFixed(2)};${Number(r.nota_excel).toFixed(2)};${Number(r.nota_final).toFixed(2)}\n`;
+        const nWin = Number(r.nota_windows).toFixed(2).replace(".", ",");
+        const nWrd = Number(r.nota_word).toFixed(2).replace(".", ",");
+        const nXcl = Number(r.nota_excel).toFixed(2).replace(".", ",");
+        const nFin = Number(r.nota_final).toFixed(2).replace(".", ",");
+        csv += `${r.comprovativo};${r.codigo};${r.nome_candidato};${nWin};${nWrd};${nXcl};${nFin}\n`;
       });
 
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
