@@ -150,6 +150,7 @@
       <!-- Abas de Navegação -->
       <div class="tab-container" style="display:flex; border-bottom:1px solid var(--regra); background:var(--surface);">
         <button class="tab-btn active" id="tabAudit">Relatório de Auditoria</button>
+        <button class="tab-btn" id="tabWindows">Visualizar Windows 💻</button>
         <button class="tab-btn" id="tabWord">Visualizar Word 📝</button>
         <button class="tab-btn" id="tabExcel">Visualizar Excel 📊</button>
       </div>
@@ -293,6 +294,19 @@
       excel_t9: "Fórmulas de Estatística (SOMA.SE / CONTAR.SE)"
     };
 
+    const WIN_Q = [
+     {q:"Qual a combinação de teclas para copiar um ficheiro ou texto selecionado?",o:["Ctrl+C","Ctrl+V","Ctrl+X","Ctrl+Z"]},
+     {q:"Onde ficam guardados os ficheiros eliminados antes de serem apagados definitivamente?",o:["Na Reciclagem","No Ambiente de Trabalho","No Explorador de Ficheiros","No Painel de Controlo"]},
+     {q:"Para que serve a tecla “Print Screen”?",o:["Imprimir diretamente o documento","Capturar uma imagem do ecrã","Bloquear o ecrã","Desligar o computador"]},
+     {q:"Como se chama a barra, normalmente na parte inferior do ecrã, onde está o menu Iniciar e os programas abertos?",o:["Barra de endereços","Barra de tarefas","Barra de título","Barra lateral"]},
+     {q:"Que extensão têm habitualmente os ficheiros comprimidos?",o:[".zip",".exe",".tmp",".sys"]},
+     {q:"Qual destas opções NÃO é um sistema operativo?",o:["Windows","Android","iOS","Microsoft Word"]},
+     {q:"Qual a principal função do Explorador de Ficheiros no Windows?",o:["Organizar, localizar e gerir ficheiros e pastas","Enviar mensagens de correio eletrónico","Ligar o computador à internet","Formatar texto num documento"]},
+     {q:"Quando se liga uma pen USB ao computador, o que é esperado que aconteça?",o:["O Windows reconhece-a automaticamente e mostra-a no Explorador de Ficheiros","Todos os ficheiros da pen são apagados","O computador bloqueia-se","O computador desliga-se automaticamente"]},
+     {q:"Onde deve ir para alterar a data e hora do sistema?",o:["Bloco de Notas","Definições / Configurações","Explorador de Ficheiros","Papel de parede"]},
+     {q:"Qual a forma mais direta de pesquisar um ficheiro no computador?",o:["Abrir a impressora","Usar a caixa de pesquisa da barra de tarefas","Reiniciar o computador","Abrir o Gestor de Tarefas"]}
+    ];
+
     let selectedRecord = null;
 
     function esc(s) { 
@@ -306,6 +320,7 @@
       
       // Reset active tab to Audit
       document.getElementById("tabAudit").classList.add("active");
+      document.getElementById("tabWindows").classList.remove("active");
       document.getElementById("tabWord").classList.remove("active");
       document.getElementById("tabExcel").classList.remove("active");
       
@@ -316,17 +331,20 @@
     function selecionarAba(aba) {
       if (!selectedRecord) return;
       document.getElementById("tabAudit").classList.remove("active");
+      document.getElementById("tabWindows").classList.remove("active");
       document.getElementById("tabWord").classList.remove("active");
       document.getElementById("tabExcel").classList.remove("active");
       
       document.getElementById("tab" + aba).classList.add("active");
       
       if (aba === "Audit") renderizarAuditReport();
+      else if (aba === "Windows") renderizarWindowsVisual();
       else if (aba === "Word") renderizarWordVisual();
       else if (aba === "Excel") renderizarExcelVisual();
     }
 
     document.getElementById("tabAudit").onclick = () => selecionarAba("Audit");
+    document.getElementById("tabWindows").onclick = () => selecionarAba("Windows");
     document.getElementById("tabWord").onclick = () => selecionarAba("Word");
     document.getElementById("tabExcel").onclick = () => selecionarAba("Excel");
 
@@ -481,6 +499,72 @@
         }
       }
       body.appendChild(xlSec);
+    }
+
+    function renderizarWindowsVisual() {
+      const r = selectedRecord;
+      const body = document.getElementById("auditBody");
+      body.innerHTML = "";
+      
+      const v = r.respostas?.versao || "A";
+      const winPayload = r.respostas?.windows;
+      
+      if (!Array.isArray(winPayload)) {
+        body.innerHTML = "<p style='padding:15px; color:var(--ink2);'>Nenhuma resposta de Windows foi gravada nesta prova.</p>";
+        return;
+      }
+      
+      let html = `<div style="margin-bottom:12px; font-weight:bold; font-size:13px; color:#2e7d32; background:#e8f5e9; padding:8px 12px; border-radius:4px; border-left:4px solid #2e7d32; font-family:sans-serif;">Versão da Prova: Versão ${v}</div>`;
+      html += `<div style="font-family:sans-serif; color:var(--ink); font-size:13px;">`;
+      
+      const perm = [4, 6, 0, 8, 1, 9, 2, 7, 3, 5];
+      const chave = v === "B" ? [0, 0, 0, 1, 0, 1, 1, 0, 1, 3] : [0, 0, 1, 1, 0, 3, 0, 0, 1, 1];
+      
+      for (let i = 0; i < 10; i++) {
+        const qIdx = v === "B" ? perm[i] : i;
+        const Q = WIN_Q[qIdx];
+        const selectedOpt = winPayload[i];
+        const correctOpt = chave[i];
+        
+        let questionHtml = `<div style="margin-bottom:20px; border:1px solid var(--regra); border-radius:6px; background:var(--paper); padding:15px;">`;
+        questionHtml += `<div style="font-weight:bold; margin-bottom:10px; font-size:13px; display:flex; justify-content:space-between; align-items:center;">`;
+        questionHtml += `<span>Pergunta ${i + 1}: ${esc(Q.q)}</span>`;
+        
+        // Status Badge
+        if (selectedOpt === correctOpt) {
+          questionHtml += `<span style="background:#e8f5e9; color:#2e7d32; font-size:11px; padding:2px 6px; border-radius:4px; font-weight:bold;">✓ Correta (+0.15 val)</span>`;
+        } else if (selectedOpt === null || selectedOpt === undefined || selectedOpt === -1) {
+          questionHtml += `<span style="background:#f5f5f5; color:#777; font-size:11px; padding:2px 6px; border-radius:4px; font-weight:bold;">Não respondida (+0.00 val)</span>`;
+        } else {
+          questionHtml += `<span style="background:#ffebee; color:#c62828; font-size:11px; padding:2px 6px; border-radius:4px; font-weight:bold;">✗ Incorreta (+0.00 val)</span>`;
+        }
+        
+        questionHtml += `</div>`;
+        questionHtml += `<div style="display:flex; flex-direction:column; gap:6px;">`;
+        
+        Q.o.forEach((opt, optIdx) => {
+          let optStyle = `padding:6px 10px; border-radius:4px; display:flex; align-items:center; gap:8px; border:1px solid #ddd; font-size:12px;`;
+          let markerHtml = `<div style="width:12px; height:12px; border-radius:50%; border:1.5px solid #888; display:flex; align-items:center; justify-content:center;"></div>`;
+          
+          if (optIdx === correctOpt) {
+            // Correct answer
+            optStyle += `background:#e8f5e9; border-color:#81c784; color:#2e7d32; font-weight:600;`;
+            markerHtml = `<div style="width:12px; height:12px; border-radius:50%; border:1.5px solid #2e7d32; background:#2e7d32; display:flex; align-items:center; justify-content:center; color:#fff; font-size:8px; font-weight:bold;">✓</div>`;
+          } else if (optIdx === selectedOpt) {
+            // Incorrect candidate answer
+            optStyle += `background:#ffebee; border-color:#e57373; color:#c62828; font-weight:600;`;
+            markerHtml = `<div style="width:12px; height:12px; border-radius:50%; border:1.5px solid #c62828; background:#c62828; display:flex; align-items:center; justify-content:center; color:#fff; font-size:8px; font-weight:bold;">✗</div>`;
+          }
+          
+          questionHtml += `<div style="${optStyle}">${markerHtml}<div>${esc(opt)}</div></div>`;
+        });
+        
+        questionHtml += `</div></div>`;
+        html += questionHtml;
+      }
+      
+      html += `</div>`;
+      body.innerHTML = html;
     }
 
     function renderizarWordVisual() {
