@@ -43,6 +43,8 @@
     .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
     .badge-win { background: #e8f5e9; color: #2e7d32; }
     .badge-total { background: #e3f2fd; color: #1565c0; font-size: 13px; }
+    .badge-pri { background: #e8f5e9; color: #2e7d32; }
+    .badge-sec { background: #fff3e0; color: #e65100; }
 
     /* Overlay do PIN */
     #pinOverlay { position: fixed; inset: 0; background: var(--ink); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
@@ -60,6 +62,9 @@
     .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
     .modal-foot { padding: 15px 20px; border-top: 1px solid var(--regra); display: flex; justify-content: flex-end; }
     .close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--ink2); }
+    .tab-btn { flex: 1; padding: 12px; border: none; background: none; font-size: 14px; font-weight: 600; cursor: pointer; color: var(--ink2); border-bottom: 2px solid transparent; outline: none; }
+    .tab-btn:hover { background: rgba(0,0,0,0.02); }
+    .tab-btn.active { color: var(--accent); border-bottom: 2px solid var(--accent); background: var(--paper); }
 
     /* Conteúdo da Auditoria */
     .audit-section { margin-bottom: 20px; }
@@ -120,6 +125,7 @@
           <th>Comprovativo</th>
           <th>Código</th>
           <th>Candidato</th>
+          <th>Versão</th>
           <th>Windows (Teórica)</th>
           <th>Word (Prática)</th>
           <th>Excel (Prática)</th>
@@ -128,7 +134,7 @@
       </thead>
       <tbody id="tableBody">
         <tr>
-          <td colspan="7" style="text-align: center; color: var(--ink2);">Nenhum resultado carregado.</td>
+          <td colspan="8" style="text-align: center; color: var(--ink2);">Nenhum resultado carregado.</td>
         </tr>
       </tbody>
     </table>
@@ -140,6 +146,12 @@
       <div class="modal-head">
         <h2 id="modalTitle">Detalhe da Correção</h2>
         <button class="close-btn" id="auditClose">×</button>
+      </div>
+      <!-- Abas de Navegação -->
+      <div style="display:flex; border-bottom:1px solid var(--regra); background:var(--surface);">
+        <button class="tab-btn active" id="tabAudit">Relatório de Auditoria</button>
+        <button class="tab-btn" id="tabWord">Visualizar Word 📝</button>
+        <button class="tab-btn" id="tabExcel">Visualizar Excel 📊</button>
       </div>
       <div class="modal-body" id="auditBody">
         <!-- Conteúdo inserido dinamicamente via JS -->
@@ -228,17 +240,19 @@
       );
 
       if (filtrados.length === 0) {
-        body.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--ink2);">Nenhum resultado encontrado.</td></tr>`;
+        body.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--ink2);">Nenhum resultado encontrado.</td></tr>`;
         return;
       }
 
       filtrados.forEach(r => {
         const tr = document.createElement("tr");
         tr.onclick = () => mostrarDetalhes(r);
+        const v = r.estado_final?.versao || "A";
         tr.innerHTML = `
           <td><b>${r.comprovativo}</b></td>
           <td><span class="code-block">${r.codigo}</span></td>
           <td>${r.nome_candidato}</td>
+          <td><span class="badge ${v === "B" ? "badge-sec" : "badge-pri"}">Versão ${v}</span></td>
           <td>${Number(r.nota_windows).toFixed(2)} val</td>
           <td>${Number(r.nota_word).toFixed(2)} val</td>
           <td>${Number(r.nota_excel).toFixed(2)} val</td>
@@ -279,13 +293,47 @@
       excel_t9: "Fórmulas de Estatística (SOMA.SE / CONTAR.SE)"
     };
 
-    function mostrarDetalhes(r) {
-      const title = document.getElementById("modalTitle");
-      const body = document.getElementById("auditBody");
-      
-      title.textContent = `Auditoria: ${r.nome_candidato} (${r.comprovativo})`;
-      body.innerHTML = "";
+    let selectedRecord = null;
 
+    function esc(s) { 
+      return String(s || "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); 
+    }
+
+    function mostrarDetalhes(r) {
+      selectedRecord = r;
+      const title = document.getElementById("modalTitle");
+      title.textContent = `Auditoria: ${r.nome_candidato} (${r.comprovativo})`;
+      
+      // Reset active tab to Audit
+      document.getElementById("tabAudit").classList.add("active");
+      document.getElementById("tabWord").classList.remove("active");
+      document.getElementById("tabExcel").classList.remove("active");
+      
+      renderizarAuditReport();
+      document.getElementById("auditVeil").classList.add("show");
+    }
+
+    function selecionarAba(aba) {
+      if (!selectedRecord) return;
+      document.getElementById("tabAudit").classList.remove("active");
+      document.getElementById("tabWord").classList.remove("active");
+      document.getElementById("tabExcel").classList.remove("active");
+      
+      document.getElementById("tab" + aba).classList.add("active");
+      
+      if (aba === "Audit") renderizarAuditReport();
+      else if (aba === "Word") renderizarWordVisual();
+      else if (aba === "Excel") renderizarExcelVisual();
+    }
+
+    document.getElementById("tabAudit").onclick = () => selecionarAba("Audit");
+    document.getElementById("tabWord").onclick = () => selecionarAba("Word");
+    document.getElementById("tabExcel").onclick = () => selecionarAba("Excel");
+
+    function renderizarAuditReport() {
+      const r = selectedRecord;
+      const body = document.getElementById("auditBody");
+      body.innerHTML = "";
       const det = r.detalhe_correcao || {};
       
       // -- Seção Windows --
@@ -433,8 +481,117 @@
         }
       }
       body.appendChild(xlSec);
+    }
 
-      document.getElementById("auditVeil").classList.add("show");
+    function renderizarWordVisual() {
+      const r = selectedRecord;
+      const body = document.getElementById("auditBody");
+      body.innerHTML = "";
+      
+      const wordPayload = r.estado_final?.word;
+      if (!wordPayload || !Array.isArray(wordPayload.blocks)) {
+        body.innerHTML = "<p style='padding:15px; color:var(--ink2);'>Nenhum documento Word foi gravado nesta prova.</p>";
+        return;
+      }
+      
+      const blocks = wordPayload.blocks;
+      const marginLeft = wordPayload.marginLeft || 3;
+      const CM = 37.8;
+      
+      let html = `<div style="border:1px solid #ccc; padding:20px; background:#fff; min-height:400px; box-sizing:border-box; padding-left:${marginLeft * CM}px; font-family:'Times New Roman'; font-size:12pt; margin:0 auto; max-width:100%; border-radius:4px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">`;
+      
+      blocks.forEach((b) => {
+        if (!b) return;
+        if (b.t === "p") {
+          let styles = `font-family:${b.ff || "Times New Roman"}; font-size:${b.fs || 12}pt;`;
+          styles += `font-weight:${b.b ? "700" : "400"}; font-style:${b.i ? "italic" : "normal"};`;
+          styles += `text-decoration:${b.u ? "underline" : "none"}; color:${b.col || "#000000"};`;
+          styles += `text-align:${b.al || "left"}; text-indent:${b.ind || 0}cm; line-height:${b.lh || 1}; min-height:18px;`;
+          if (b.bd) {
+            styles += `border:1px solid #555; padding:6px 8px; margin:4px 0; display:block;`;
+          } else {
+            styles += `padding:1px 2px; margin:0; display:block;`;
+          }
+          html += `<div style="${styles}">${esc(b.text)}</div>`;
+        } else if (b.t === "break") {
+          html += `<div style="text-align:center; color:#999; border-top:1px dashed #ccc; margin:15px 0; font-size:10px; padding-top:4px; font-family:sans-serif;">— quebra de página —</div>`;
+        } else if (b.t === "img") {
+          let styles = `text-align:${b.al || "center"}; margin:8px 0;`;
+          html += `<div style="${styles}"><div style="display:inline-block; border:1px solid #ccc; background:#f0f0f0; padding:10px; font-size:11px; font-family:sans-serif; border-radius:4px;">🖼️ [Fotografia: ${esc(b.nome || "Imagem")}]</div></div>`;
+        } else if (b.t === "table") {
+          let tableHtml = `<table style="width:100%; border-collapse:collapse; margin:10px 0; border:1px solid #ccc;">`;
+          if (Array.isArray(b.rows)) {
+            b.rows.forEach(row => {
+              tableHtml += `<tr>`;
+              if (Array.isArray(row)) {
+                row.forEach(cell => {
+                  tableHtml += `<td style="border:1px solid #ccc; padding:6px; font-size:11px;">${esc(cell)}</td>`;
+                });
+              }
+              tableHtml += `</tr>`;
+            });
+          }
+          tableHtml += `</table>`;
+          html += tableHtml;
+        }
+      });
+      
+      html += `</div>`;
+      body.innerHTML = html;
+    }
+
+    function renderizarExcelVisual() {
+      const r = selectedRecord;
+      const body = document.getElementById("auditBody");
+      body.innerHTML = "";
+      
+      const excelPayload = r.estado_final?.excel;
+      if (!excelPayload || !excelPayload.cells) {
+        body.innerHTML = "<p style='padding:15px; color:var(--ink2);'>Nenhuma folha de Excel foi gravada nesta prova.</p>";
+        return;
+      }
+      
+      const cells = excelPayload.cells;
+      
+      let html = `<div style="overflow-x:auto; background:#fff; border:1px solid #ccc; font-family:sans-serif; font-size:11px; border-radius:4px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">`;
+      html += `<table style="border-collapse:collapse; width:100%; text-align:left; background:#fff; table-layout:fixed;">`;
+      
+      // Headers row
+      html += `<tr style="background:#f4f6f4; font-weight:bold;">`;
+      html += `<td style="border:1px solid #ccc; padding:6px; width:45px; text-align:center; color:#666;">Row</td>`;
+      for (let c = 1; c <= 7; c++) {
+        const colName = String.fromCharCode(65 + c - 1);
+        html += `<td style="border:1px solid #ccc; padding:6px; text-align:center; font-weight:bold; color:#666;">${colName}</td>`;
+      }
+      html += `</tr>`;
+      
+      // Rows
+      for (let rowNum = 1; rowNum <= 32; rowNum++) {
+        html += `<tr>`;
+        html += `<td style="border:1px solid #ccc; padding:6px; background:#f4f6f4; text-align:center; font-weight:bold; color:#666;">${rowNum}</td>`;
+        for (let colNum = 1; colNum <= 7; colNum++) {
+          const colName = String.fromCharCode(65 + colNum - 1);
+          const cellId = colName + rowNum;
+          const cell = cells[cellId] || {};
+          const rawVal = cell.raw || "";
+          
+          let styles = `border:1px solid #ddd; padding:6px; min-height:22px; word-break:break-all; vertical-align:middle;`;
+          if (cell.b) styles += `font-weight:bold;`;
+          if (cell.i) styles += `font-style:italic;`;
+          if (cell.al) styles += `text-align:${cell.al};`;
+          if (cell.bg) styles += `background:#e8f5e9;`;
+          if (cell.bd) {
+            styles += `border:1px solid #666;`;
+          }
+          
+          html += `<td style="${styles}" title="${cellId} (${cell.nf || 'geral'})">${esc(rawVal)}</td>`;
+        }
+        html += `</tr>`;
+      }
+      
+      html += `</table>`;
+      html += `</div>`;
+      body.innerHTML = html;
     }
 
     // Fechar Modal

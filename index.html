@@ -1577,6 +1577,14 @@ async function realizarLogin(){
   err.style.display="none";
   if(!/^[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/.test(v)){ err.textContent="Código inválido. Deve ter o formato XXXX-XXXX."; err.style.display="block"; return; }
   if(MODO_DEMO){
+    const instHtml = `
+      <div style="font-size:14px; line-height:1.6; color:var(--ink); text-align:left;">
+        <p>• A prova é composta por <b>3 componentes</b> (Windows / Word / Excel).</p>
+        <p>• Para navegar entre os componentes, basta clicar nos botões no fundo da página, localizados à direita e à esquerda.</p>
+        <p>• <b>Nenhuma pergunta é de resposta obrigatória.</b></p>
+      </div>
+    `;
+    await ask("INSTRUÇÕES DE PREENCHIMENTO", instHtml, "Iniciar Prova 🏁", null);
     codigo=v; sessaoId="demo"; token="demo"; nomeCandidato="Candidato Demo";
     fimEm=Date.now()+3600*1000;
     document.getElementById("codeChip").textContent=v+" · DEMO";
@@ -1599,6 +1607,16 @@ async function realizarLogin(){
       btn.disabled=false; btn.textContent="Iniciar prova";
       pinVigilante = null;
       return;
+    }
+    if (!r.retomada) {
+      const instHtml = `
+        <div style="font-size:14px; line-height:1.6; color:var(--ink); text-align:left;">
+          <p>• A prova é composta por <b>3 componentes</b> (Windows / Word / Excel).</p>
+          <p>• Para navegar entre os componentes, basta clicar nos botões no fundo da página, localizados à direita e à esquerda.</p>
+          <p>• <b>Nenhuma pergunta é de resposta obrigatória.</b></p>
+        </div>
+      `;
+      await ask("INSTRUÇÕES DE PREENCHIMENTO", instHtml, "Iniciar Prova 🏁", null);
     }
     codigo=v; nomeCandidato=r.nome_candidato; sessaoId=r.sessao_id; token=r.token;
     fimEm=Date.now()+(r.restante_seg||3600)*1000;
