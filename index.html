@@ -579,6 +579,7 @@ table.res td.n{font-family:var(--mono);font-variant-numeric:tabular-nums}
 
 <script>
 "use strict";
+const PROVA_VERSION=new URLSearchParams(window.location.search).get("v")?.toUpperCase()==="B"?"B":"A";
 
 /* ============ ARMAZENAMENTO ============ */
 const Store=(()=>{ const mem={};
@@ -625,6 +626,11 @@ const WIN_Q=[
  {q:"Onde deve ir para alterar a data e hora do sistema?",o:["Bloco de Notas","Definições / Configurações","Explorador de Ficheiros","Papel de parede"],c:null},
  {q:"Qual a forma mais direta de pesquisar um ficheiro no computador?",o:["Abrir a impressora","Usar a caixa de pesquisa da barra de tarefas","Reiniciar o computador","Abrir o Gestor de Tarefas"],c:null}
 ];
+if(PROVA_VERSION==="B"){
+  const perm=[4,6,0,8,1,9,2,7,3,5];
+  const orig=[...WIN_Q];
+  perm.forEach((oIdx,nIdx)=>{ WIN_Q[nIdx]=orig[oIdx]; });
+}
 const winAns=new Array(WIN_Q.length).fill(null); let winCur=0;
 const qnav=document.getElementById("qnav"), qcard=document.getElementById("qcard");
 function renderWin(){
@@ -697,13 +703,18 @@ function updateUndoButton(){
 }
 function P(t,o){ return Object.assign({t:"p",text:t,ff:"Times New Roman",fs:12,b:false,i:false,u:false,
   col:"#000000",al:"left",ind:0,lh:1,bd:""},o||{}); }
-doc.blocks=[
+doc.blocks=PROVA_VERSION==="B"?[
+ P("O Palácio Nacional da Pena ergue-se no topo da serra de Sintra, reconhecível à distância pelas suas cores vivas e arquitetura romântica do século XIX.",{orig:true}),
+ P("A sua construção decorreu por iniciativa do rei consorte D. Fernando II, o que explica a coexistência de elementos neogóticos, neomanuelinos e neoárabes.",{orig:true}),
+ P("No interior destacam-se a Sala dos Veados, o Claustro Manuelino e o Salão Nobre, cada um com uma decoração luxuosa e uma simbologia única.",{orig:true}),
+ P("Integrado no Parque da Pena, classificado como Património Mundial, o palácio recebe hoje milhares de visitantes vindos de todo o mundo.",{orig:true})
+]:[
  P("O Palácio Nacional de Sintra ergue-se no centro histórico da vila, reconhecível à distância pelas duas chaminés cónicas que encimam a antiga cozinha real.",{orig:true}),
  P("A sua construção decorreu ao longo de vários séculos, o que explica a coexistência de elementos góticos, manuelinos e mudéjares num mesmo conjunto edificado.",{orig:true}),
  P("No interior destacam-se a Sala dos Cisnes, a Sala das Pegas e a Sala dos Brasões, cada uma com um programa decorativo próprio e uma história associada.",{orig:true}),
  P("Integrado na Paisagem Cultural de Sintra, classificada como Património Mundial, o palácio recebe hoje visitantes vindos de todo o mundo.",{orig:true})
 ];
-const ASSINATURA="Nota informativa do Município de Sintra";
+const ASSINATURA=PROVA_VERSION==="B"?"Nota informativa do Palácio da Pena":"Nota informativa do Município de Sintra";
 let wA=0,wB=0;
 const page=document.getElementById("page"), CM=37.8;
 function wRange(){ return [Math.min(wA,wB),Math.max(wA,wB)]; }
@@ -937,8 +948,13 @@ seedX("D6","preço unitário",{b:true,al:"center",wrap:true});
 seedX("E6","preço com IVA",{b:true,al:"center",wrap:true});
 seedX("F6","quantidade",{b:true,al:"center",wrap:true});
 seedX("G6","valor total",{b:true,al:"center",wrap:true});
-const ARTIGOS=[["AB1","Fogão a lenha",150,10],["AB2","Mesa de Cozinha",110,8],
- ["AB3","Sofá Cama",190,15],["AB4","Balcão com lava-loiças",115,5],["AB5","Cristaleira",95,9]];
+const ARTIGOS=PROVA_VERSION==="B"?[
+  ["CD1","Cadeira de escritório",120,15],["CD2","Calculadora científica",45,25],
+  ["CD3","Quadro branco magnético",85,10],["CD4","Destruidor de papel",130,6],["CD5","Arquivo metálico de gavetas",195,4]
+]:[
+  ["AB1","Fogão a lenha",150,10],["AB2","Mesa de Cozinha",110,8],
+  ["AB3","Sofá Cama",190,15],["AB4","Balcão com lava-loiças",115,5],["AB5","Cristaleira",95,9]
+];
 ARTIGOS.forEach((a,i)=>{ const r=i+7;
   seedX("B"+r,a[0],{al:"center"}); seedX("C"+r,a[1]); seedX("D"+r,a[2]); seedX("F"+r,a[3],{al:"right"}); });
 seedX("C13","média:",{al:"right",b:true});
@@ -952,8 +968,13 @@ seedX("C21","Valor",{b:true,al:"center",bd:"trbl",bg:1});
 seedX("D21","Quantidade",{b:true,al:"center",bd:"trbl",bg:1});
 seedX("E21","Local de Origem",{b:true,al:"center",bd:"trbl",bg:1});
 seedX("F21","Stock",{b:true,al:"center",bd:"trbl",bg:1});
-const PRODUTOS=[["Lápis",0.5,20,"Sintra"],["Canetas",1,15,"Cacém"],
-                ["Borrachas",0.75,10,"Queluz"],["Afias",0.8,50,"Sintra"]];
+const PRODUTOS=PROVA_VERSION==="B"?[
+  ["Cadernos",1.5,40,"Sintra"],["Marcadores",1.2,15,"Cacém"],
+  ["Tesouras",2.0,8,"Queluz"],["Réguas",0.9,30,"Sintra"]
+]:[
+  ["Lápis",0.5,20,"Sintra"],["Canetas",1,15,"Cacém"],
+  ["Borrachas",0.75,10,"Queluz"],["Afias",0.8,50,"Sintra"]
+];
 PRODUTOS.forEach((pr,i)=>{ const r=22+i;
   seedX("B"+r,pr[0],{bd:"trbl"});
   seedX("C"+r,String(pr[1]).replace(".",","),{nf:"eur",al:"right",bd:"trbl"});
@@ -1496,7 +1517,7 @@ async function api(fn,corpo){
 
 /* ---- estado da prova ---- */
 function snapshot(){
-  return {v:1, windows:winAns.slice(),
+  return {v:1, versao:PROVA_VERSION, windows:winAns.slice(),
     word:{marginLeft:doc.marginLeft, blocks:doc.blocks},
     excel:{cells:cells, merges:merges}};
 }
@@ -1567,7 +1588,7 @@ async function realizarLogin(){
   }
   btn.disabled=true; btn.textContent="A ligar ao servidor…";
   try{
-    const r=await api("iniciar",{codigo:v,posto:CONFIG.POSTO,pin:pinVigilante});
+    const r=await api("iniciar",{codigo:v,posto:CONFIG.POSTO,pin:pinVigilante,versao:PROVA_VERSION});
     const confirmado = await ask("Confirmar Identidade",
       `Deseja iniciar a prova de:<br><br><b style="font-size:16px">${r.nome_candidato}</b>`,
       "Sim, sou eu", "Não, cancelar");
