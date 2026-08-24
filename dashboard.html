@@ -79,7 +79,7 @@
     .code-block { font-family: monospace; background: var(--surface); padding: 2px 6px; border-radius: 4px; font-size: 12px; }
     @media print {
       body { background: white; color: black; padding: 0; }
-      #pinOverlay, header, .search-box, .container, .modal-foot, .close-btn { display: none !important; }
+      #pinOverlay, header, .search-box, .container, .modal-foot, .close-btn, .tab-container { display: none !important; }
       .veil { position: absolute; background: none; display: block !important; }
       .modal { max-width: 100%; box-shadow: none; display: block !important; max-height: none; overflow: visible !important; border: none; }
       .modal-body { overflow: visible !important; max-height: none; padding: 0; }
@@ -148,7 +148,7 @@
         <button class="close-btn" id="auditClose">×</button>
       </div>
       <!-- Abas de Navegação -->
-      <div style="display:flex; border-bottom:1px solid var(--regra); background:var(--surface);">
+      <div class="tab-container" style="display:flex; border-bottom:1px solid var(--regra); background:var(--surface);">
         <button class="tab-btn active" id="tabAudit">Relatório de Auditoria</button>
         <button class="tab-btn" id="tabWord">Visualizar Word 📝</button>
         <button class="tab-btn" id="tabExcel">Visualizar Excel 📊</button>
@@ -247,7 +247,7 @@
       filtrados.forEach(r => {
         const tr = document.createElement("tr");
         tr.onclick = () => mostrarDetalhes(r);
-        const v = r.estado_final?.versao || "A";
+        const v = r.respostas?.versao || "A";
         tr.innerHTML = `
           <td><b>${r.comprovativo}</b></td>
           <td><span class="code-block">${r.codigo}</span></td>
@@ -488,7 +488,7 @@
       const body = document.getElementById("auditBody");
       body.innerHTML = "";
       
-      const wordPayload = r.estado_final?.word;
+      const wordPayload = r.respostas?.word;
       if (!wordPayload || !Array.isArray(wordPayload.blocks)) {
         body.innerHTML = "<p style='padding:15px; color:var(--ink2);'>Nenhum documento Word foi gravado nesta prova.</p>";
         return;
@@ -545,7 +545,7 @@
       const body = document.getElementById("auditBody");
       body.innerHTML = "";
       
-      const excelPayload = r.estado_final?.excel;
+      const excelPayload = r.respostas?.excel;
       if (!excelPayload || !excelPayload.cells) {
         body.innerHTML = "<p style='padding:15px; color:var(--ink2);'>Nenhuma folha de Excel foi gravada nesta prova.</p>";
         return;
