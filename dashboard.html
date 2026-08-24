@@ -57,7 +57,7 @@
     /* Modal do Detalhe */
     .veil { position: fixed; inset: 0; background: rgba(22, 35, 43, 0.62); z-index: 500; display: none; align-items: center; justify-content: center; padding: 20px; }
     .veil.show { display: flex; }
-    .modal { background: var(--paper); width: 100%; max-width: 700px; max-height: 90vh; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+    .modal { background: var(--paper); width: 100%; max-width: 1200px; max-height: 90vh; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
     .modal-head { padding: 20px; border-bottom: 1px solid var(--regra); display: flex; justify-content: space-between; align-items: center; }
     .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
     .modal-foot { padding: 15px 20px; border-top: 1px solid var(--regra); display: flex; justify-content: flex-end; }
@@ -498,7 +498,9 @@
       const marginLeft = wordPayload.marginLeft || 3;
       const CM = 37.8;
       
-      let html = `<div style="border:1px solid #ccc; padding:20px; background:#fff; min-height:400px; box-sizing:border-box; padding-left:${marginLeft * CM}px; font-family:'Times New Roman'; font-size:12pt; margin:0 auto; max-width:100%; border-radius:4px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">`;
+      const v = r.respostas?.versao || "A";
+      let html = `<div style="margin-bottom:12px; font-weight:bold; font-size:13px; color:#2e7d32; background:#e8f5e9; padding:8px 12px; border-radius:4px; border-left:4px solid #2e7d32; font-family:sans-serif;">Versão da Prova: Versão ${v}</div>`;
+      html += `<div style="border:1px solid #ccc; padding:20px; background:#fff; min-height:400px; box-sizing:border-box; padding-left:${marginLeft * CM}px; font-family:'Times New Roman'; font-size:12pt; margin:0 auto; max-width:100%; border-radius:4px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">`;
       
       blocks.forEach((b) => {
         if (!b) return;
@@ -553,7 +555,9 @@
       
       const cells = excelPayload.cells;
       
-      let html = `<div style="overflow-x:auto; background:#fff; border:1px solid #ccc; font-family:sans-serif; font-size:11px; border-radius:4px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">`;
+      const v = r.respostas?.versao || "A";
+      let html = `<div style="margin-bottom:12px; font-weight:bold; font-size:13px; color:#2e7d32; background:#e8f5e9; padding:8px 12px; border-radius:4px; border-left:4px solid #2e7d32; font-family:sans-serif;">Versão da Prova: Versão ${v}</div>`;
+      html += `<div style="overflow-x:auto; background:#fff; border:1px solid #ccc; font-family:sans-serif; font-size:10px; border-radius:4px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">`;
       html += `<table style="border-collapse:collapse; width:100%; text-align:left; background:#fff; table-layout:fixed;">`;
       html += `<colgroup>`;
       html += `<col style="width:45px;">`;
@@ -568,24 +572,24 @@
       
       // Headers row
       html += `<tr style="background:#f4f6f4; font-weight:bold;">`;
-      html += `<td style="border:1px solid #ccc; padding:6px; width:45px; text-align:center; color:#666;">Row</td>`;
+      html += `<td style="border:1px solid #ccc; padding:3px; width:45px; text-align:center; color:#666;">Row</td>`;
       for (let c = 1; c <= 7; c++) {
         const colName = String.fromCharCode(65 + c - 1);
-        html += `<td style="border:1px solid #ccc; padding:6px; text-align:center; font-weight:bold; color:#666;">${colName}</td>`;
+        html += `<td style="border:1px solid #ccc; padding:3px; text-align:center; font-weight:bold; color:#666;">${colName}</td>`;
       }
       html += `</tr>`;
       
       // Rows
       for (let rowNum = 1; rowNum <= 32; rowNum++) {
         html += `<tr>`;
-        html += `<td style="border:1px solid #ccc; padding:6px; background:#f4f6f4; text-align:center; font-weight:bold; color:#666;">${rowNum}</td>`;
+        html += `<td style="border:1px solid #ccc; padding:3px; background:#f4f6f4; text-align:center; font-weight:bold; color:#666;">${rowNum}</td>`;
         for (let colNum = 1; colNum <= 7; colNum++) {
           const colName = String.fromCharCode(65 + colNum - 1);
           const cellId = colName + rowNum;
           const cell = cells[cellId] || {};
           const rawVal = cell.raw || "";
           
-          let styles = `border:1px solid #ddd; padding:6px; min-height:22px; word-break:break-all; vertical-align:middle;`;
+          let styles = `border:1px solid #ddd; padding:3px; min-height:18px; word-break:break-all; vertical-align:middle;`;
           if (cell.b) styles += `font-weight:bold;`;
           if (cell.i) styles += `font-style:italic;`;
           if (cell.al) styles += `text-align:${cell.al};`;
