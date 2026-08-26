@@ -533,6 +533,7 @@ table.res td.n{font-family:var(--mono);font-variant-numeric:tabular-nums}
         </div><div class="gname">Número</div></div>
         <div class="sep"></div>
         <div class="rgroup"><div class="rr">
+          <button class="tool" id="xUndo" title="Desfazer a última ação" disabled>Desfazer</button>
           <button class="tool" id="btnClearX">Limpar</button>
         </div><div class="gname">Edição</div></div>
       </div>
@@ -931,6 +932,39 @@ const COLS=["A","B","C","D","E","F","G","H"];
 const COLW={A:38,B:100,C:170,D:259,E:259,F:259,G:259,H:44};
 const NROWS=34, NCOLS=COLS.length;
 const cells={}, merges=[];
+const excelHistory = [];
+let isUndoingExcel = false;
+function saveExcelState() {
+  if (isUndoingExcel) return;
+  const state = JSON.parse(JSON.stringify({ cells, merges }));
+  if (excelHistory.length > 0) {
+    const last = excelHistory[excelHistory.length - 1];
+    if (JSON.stringify(last) === JSON.stringify(state)) return;
+  }
+  excelHistory.push(state);
+  if (excelHistory.length > 50) excelHistory.shift();
+  updateExcelUndoButton();
+}
+function undoExcel() {
+  if (excelHistory.length <= 1) return;
+  isUndoingExcel = true;
+  excelHistory.pop();
+  const prevState = JSON.parse(JSON.stringify(excelHistory[excelHistory.length - 1]));
+  for (const k in cells) delete cells[k];
+  Object.assign(cells, prevState.cells);
+  merges.length = 0;
+  merges.push(...prevState.merges);
+  renderX();
+  const fbar = document.getElementById("fbar");
+  if (fbar) fbar.value = rawX(anch());
+  isUndoingExcel = false;
+  updateExcelUndoButton();
+}
+function updateExcelUndoButton() {
+  const undoBtn = document.getElementById("xUndo");
+  if (undoBtn) undoBtn.disabled = (excelHistory.length <= 1);
+}
+
 function blankC(){ return {raw:"",b:false,i:false,u:false,al:null,nf:"geral",dec:null,
   wrap:false,bd:"",bdw:1,bg:0,col:"",ff:"",fs:0,lk:false}; }
 const XPROPS=["b","i","u","al","nf","dec","wrap","bd","bdw","bg","col","ff","fs"];
@@ -986,6 +1020,7 @@ seedX("B28","Qual o valor do produto mais caro?");
 seedX("B29","Qual o valor do produto mais barato?");
 seedX("B30","Quantidade de produtos provenientes de Sintra?");
 seedX("B31","Quantos produtos diferentes provêm de Sintra?");
+saveExcelState();
 
 const ERR=t=>({e:t}); const isErr=v=>v&&typeof v==="object"&&"e" in v;
 function pNum(s){ if(typeof s!=="string") return null; const t=s.trim().replace(/\s/g,"");
@@ -1289,7 +1324,14 @@ function startEditX(ch){ const td=tdOf(sA.r,sA.c); if(!td) return;
   editingX=true; pIns={start:0,len:0}; editorX.focus();
   const n=editorX.value.length; editorX.setSelectionRange(n,n);
   handle.style.display="none"; updHint(); }
-function commitX(){ if(!editingX) return; if(!bloqueada(anch())) cellX(anch()).raw=editorX.value;
+function commitX(){ if(!editingX) return;
+  if(!bloqueada(anch())) {
+    const old = rawX(anch());
+    if (old !== editorX.value) {
+      cellX(anch()).raw = editorX.value;
+      saveExcelState();
+    }
+  }
   editorX.style.display="none"; editingX=false; pIns={start:0,len:0}; updHint(); renderX(); }
 function moveX(dc,dr){ const c=Math.min(NCOLS,Math.max(1,sA.c+dc)), r=Math.min(NROWS,Math.max(1,sA.r+dr));
   sA={c,r}; sB={c,r}; renderX(); wrapX.focus(); }
@@ -1326,7 +1368,7 @@ handle.addEventListener("mousedown",e=>{ fillX=true; fillSrc=sR(); fillTo=null; 
 window.addEventListener("mouseup",()=>{
   dragX=false;
   if(pointing){ pointing=false; const inp=activeInput(); if(inp) inp.focus(); drawSel(); return; }
-  if(fillX){ fillX=false; if(fillTo) applyFill(fillSrc,fillTo); fillTo=null; renderX(); } });
+  if(fillX){ fillX=false; if(fillTo) { applyFill(fillSrc,fillTo); saveExcelState(); } fillTo=null; renderX(); } });
 function applyFill(S,T){ const H=S.r1-S.r0+1, W=S.c1-S.c0+1;
   const cp=(s,d)=>{ if(d.lk) return; XPROPS.forEach(k=>d[k]=s[k]); };
   if(T.r>S.r1){ for(let r=S.r1+1;r<=T.r;r++){ const sr=S.r0+((r-S.r0)%H);
@@ -1347,6 +1389,7 @@ wrapX.addEventListener("keydown",e=>{ if(editingX) return; const k=e.key;
   else if(k==="Tab"){moveX(e.shiftKey?-1:1,0);e.preventDefault();}
   else if(k==="Delete"||k==="Backspace"){ let bl=0;
     eachX(c=>{ if(c.lk) bl++; else c.raw=""; });
+    saveExcelState();
     renderX(); if(bl) avisarBloqueio(); e.preventDefault();}
   else if(k.length===1&&!e.ctrlKey&&!e.altKey&&!e.metaKey){startEditX(k);e.preventDefault();} });
 editorX.addEventListener("input",()=>{ pIns={start:0,len:0}; updHint(); });
@@ -1361,52 +1404,54 @@ fbarX.addEventListener("blur",()=>{ if(!pointing) setTimeout(updHint,0); });
 fbarX.addEventListener("keydown",e=>{ if(e.key==="Enter"){
   if(bloqueada(anch())){ avisarBloqueio(); fbarX.value=rawX(anch()); wrapX.focus(); e.preventDefault(); return; }
   cellX(anch()).raw=fbarX.value;
+  saveExcelState();
   pIns={start:0,len:0}; renderX(); wrapX.focus(); updHint(); e.preventDefault(); } });
 
 document.querySelectorAll("[data-fmt]").forEach(b=>b.onclick=()=>{
-  const k=b.dataset.fmt, v=!(cells[anch()]||blankC())[k]; eachX(c=>c[k]=v); renderX(); wrapX.focus(); });
+  const k=b.dataset.fmt, v=!(cells[anch()]||blankC())[k]; eachX(c=>c[k]=v); saveExcelState(); renderX(); wrapX.focus(); });
 document.querySelectorAll("[data-align]").forEach(b=>b.onclick=()=>{
-  const v=b.dataset.align, cur=(cells[anch()]||blankC()).al===v?null:v; eachX(c=>c.al=cur); renderX(); wrapX.focus(); });
+  const v=b.dataset.align, cur=(cells[anch()]||blankC()).al===v?null:v; eachX(c=>c.al=cur); saveExcelState(); renderX(); wrapX.focus(); });
 document.getElementById("numFmt").onchange=e=>{ const v=e.target.value;
-  eachX(c=>{ c.nf=v; if(v==="pct"&&c.dec===null) c.dec=2; }); renderX(); wrapX.focus(); };
-document.getElementById("btnPctQ").onclick=()=>{ eachX(c=>{c.nf="pct";}); renderX(); wrapX.focus(); };
+  eachX(c=>{ c.nf=v; if(v==="pct"&&c.dec===null) c.dec=2; }); saveExcelState(); renderX(); wrapX.focus(); };
+document.getElementById("btnPctQ").onclick=()=>{ eachX(c=>{c.nf="pct";}); saveExcelState(); renderX(); wrapX.focus(); };
 document.getElementById("btnDecMais").onclick=()=>{
-  eachX(c=>c.dec=Math.min(6,(c.dec===null?2:c.dec)+1)); renderX(); wrapX.focus(); };
+  eachX(c=>c.dec=Math.min(6,(c.dec===null?2:c.dec)+1)); saveExcelState(); renderX(); wrapX.focus(); };
 document.getElementById("btnDecMenos").onclick=()=>{
-  eachX(c=>c.dec=Math.max(0,(c.dec===null?2:c.dec)-1)); renderX(); wrapX.focus(); };
-document.getElementById("xFont").onchange=e=>{ const v=e.target.value; eachX(c=>c.ff=v); renderX(); wrapX.focus(); };
-document.getElementById("xSize").onchange=e=>{ const v=+e.target.value; eachX(c=>c.fs=v); renderX(); wrapX.focus(); };
-document.getElementById("btnWrap").onclick=()=>{ const v=!(cells[anch()]||blankC()).wrap; eachX(c=>c.wrap=v); renderX(); wrapX.focus(); };
+  eachX(c=>c.dec=Math.max(0,(c.dec===null?2:c.dec)-1)); saveExcelState(); renderX(); wrapX.focus(); };
+document.getElementById("xFont").onchange=e=>{ const v=e.target.value; eachX(c=>c.ff=v); saveExcelState(); renderX(); wrapX.focus(); };
+document.getElementById("xSize").onchange=e=>{ const v=+e.target.value; eachX(c=>c.fs=v); saveExcelState(); renderX(); wrapX.focus(); };
+document.getElementById("btnWrap").onclick=()=>{ const v=!(cells[anch()]||blankC()).wrap; eachX(c=>c.wrap=v); saveExcelState(); renderX(); wrapX.focus(); };
 
 document.getElementById("xSwatches").innerHTML=XCORES.map(c=>
   `<button data-xcol="${c[0]}" title="${c[1]}" style="background:${c[0]}"></button>`).join("");
 { const po=ligarPop("xColorBtn","xColorPop");
   po.onclick=e=>{ const b=e.target.closest("[data-xcol]"); if(!b) return; fecharPops();
-    const v=b.dataset.xcol; eachX(c=>c.col=v); renderX();
+    const v=b.dataset.xcol; eachX(c=>c.col=v); saveExcelState(); renderX();
     document.getElementById("xColorSw").style.background=v||"#1B1F1D"; wrapX.focus(); }; }
 { const po=ligarPop("xFillBtn","xFillPop");
   po.innerHTML=`<button class="mi" data-xbg="0"><span class="gl" style="background:#fff"></span>Sem preenchimento</button>
     <div class="ph">Cores de fundo</div><div class="swatches">`+
     SHADES.map((h,i)=>i?`<button data-xbg="${i}" style="background:${h}"></button>`:"").join("")+`</div>`;
   po.onclick=e=>{ const b=e.target.closest("[data-xbg]"); if(!b) return; fecharPops();
-    const v=+b.dataset.xbg; eachX(c=>c.bg=v); renderX(); wrapX.focus(); }; }
+    const v=+b.dataset.xbg; eachX(c=>c.bg=v); saveExcelState(); renderX(); wrapX.focus(); }; }
 { const po=ligarPop("xBorderBtn","xBorderPop");
   po.innerHTML=XBORDAS.map(o=>`<button class="mi" data-xbd="${o[0]}"><span class="gl"></span>${o[1]}</button>`).join("");
   po.onclick=e=>{ const b=e.target.closest("[data-xbd]"); if(!b) return; fecharPops();
     aplicarLimites(b.dataset.xbd); wrapX.focus(); }; }
 function aplicarLimites(op){ const S=sR();
   const add=(c,sd)=>{ let v=c.bd||""; for(const ch of sd) if(!v.includes(ch)) v+=ch; c.bd=v; };
-  if(op===""){ eachX(c=>{ c.bd=""; c.bdw=1; }); renderX(); return; }
-  if(op==="trbl"){ eachX(c=>{ c.bd="trbl"; c.bdw=1; }); renderX(); return; }
+  if(op===""){ eachX(c=>{ c.bd=""; c.bdw=1; }); saveExcelState(); renderX(); return; }
+  if(op==="trbl"){ eachX(c=>{ c.bd="trbl"; c.bdw=1; }); saveExcelState(); renderX(); return; }
   if(op==="ext"||op==="extesp"){ const w=op==="extesp"?2:1;
     eachX((c,r,cc)=>{ let sd="";
       if(r===S.r0) sd+="t"; if(r===S.r1) sd+="b";
       if(cc===S.c0) sd+="l"; if(cc===S.c1) sd+="r";
       if(sd){ add(c,sd); c.bdw=w; } });
-    renderX(); return; }
-  eachX(c=>{ add(c,op); }); renderX(); }
+    saveExcelState(); renderX(); return; }
+  eachX(c=>{ add(c,op); }); saveExcelState(); renderX(); }
 document.getElementById("btnClearX").onclick=()=>{ let bl=0;
   eachX(c=>{ if(c.lk) bl++; else c.raw=""; });
+  saveExcelState();
   renderX(); if(bl) avisarBloqueio(); wrapX.focus(); };
 document.getElementById("btnMerge").onclick=()=>{ const S=sR();
   const ex=merges.findIndex(m=>m.r0===S.r0&&m.c0===S.c0&&m.r1===S.r1&&m.c1===S.c1);
@@ -1415,7 +1460,9 @@ document.getElementById("btnMerge").onclick=()=>{ const S=sR();
     for(let i=merges.length-1;i>=0;i--){ const m=merges[i];
       if(!(m.r1<S.r0||m.r0>S.r1||m.c1<S.c0||m.c0>S.c1)) merges.splice(i,1); }
     merges.push({...S}); }
+  saveExcelState();
   renderX(); wrapX.focus(); };
+document.getElementById("xUndo").onclick=()=>undoExcel();
 wrapX.addEventListener("scroll",()=>drawSel());
 window.addEventListener("resize",()=>drawSel());
 
@@ -1536,6 +1583,8 @@ function restaurar(p){
       if(Array.isArray(p.excel.merges)){ merges.length=0; p.excel.merges.forEach(m=>merges.push(m)); }
     }
     renderWin(); renderDoc(); renderX();
+    wordHistory.length=0; saveWordState();
+    excelHistory.length=0; saveExcelState();
   }catch(e){ console.warn("Falha ao restaurar",e); }
 }
 function marcarSinc(ok){ syncEl.classList.toggle("mau",!ok);
@@ -1621,7 +1670,13 @@ async function realizarLogin(){
     codigo=v; nomeCandidato=r.nome_candidato; sessaoId=r.sessao_id; token=r.token;
     fimEm=Date.now()+(r.restante_seg||3600)*1000;
     document.getElementById("codeChip").textContent=v;
-    if(r.estado) restaurar(r.estado); else { renderWin(); renderDoc(); renderX(); }
+    if(r.estado) {
+      restaurar(r.estado);
+    } else {
+      renderWin(); renderDoc(); renderX();
+      wordHistory.length=0; saveWordState();
+      excelHistory.length=0; saveExcelState();
+    }
     document.getElementById("gate").style.display="none";
     goStep(0); tique();
     tick=setInterval(tique,1000);
