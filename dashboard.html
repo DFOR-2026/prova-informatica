@@ -248,7 +248,7 @@
       filtrados.forEach(r => {
         const tr = document.createElement("tr");
         tr.onclick = () => mostrarDetalhes(r);
-        const v = r.respostas?.versao || "A";
+        const v = r.versao || r.respostas?.versao || "A";
         tr.innerHTML = `
           <td><b>${r.comprovativo}</b></td>
           <td><span class="code-block">${r.codigo}</span></td>
@@ -313,19 +313,54 @@
       return String(s || "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); 
     }
 
-    function mostrarDetalhes(r) {
+    async function mostrarDetalhes(r) {
       selectedRecord = r;
       const title = document.getElementById("modalTitle");
-      title.textContent = `Auditoria: ${r.nome_candidato} (${r.comprovativo})`;
+      title.textContent = "A carregar...";
+      
+      const body = document.getElementById("auditBody");
+      body.innerHTML = `<div style="text-align: center; padding: 40px; font-size: 16px; color: var(--ink2);">
+        <span style="font-size: 24px; display: inline-block;">⏳</span> A carregar detalhes da prova... Por favor, aguarde.
+      </div>`;
+      
+      // Mostrar o modal imediatamente com o loading
+      document.getElementById("auditVeil").classList.add("show");
       
       // Reset active tab to Audit
       document.getElementById("tabAudit").classList.add("active");
       document.getElementById("tabWindows").classList.remove("active");
       document.getElementById("tabWord").classList.remove("active");
       document.getElementById("tabExcel").classList.remove("active");
-      
-      renderizarAuditReport();
-      document.getElementById("auditVeil").classList.add("show");
+
+      try {
+        if (!r.respostas || !r.detalhe_correcao) {
+          const response = await fetch(`${CONFIG.URL}/functions/v1/resultados`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ pin: savedPin, codigo: r.codigo })
+          });
+          
+          const res = await response.json();
+          if (response.ok && res.resultado) {
+            Object.assign(r, res.resultado);
+          } else {
+            body.innerHTML = `<div style="color: var(--red); padding: 20px; text-align: center; font-weight: bold;">
+              ❌ Erro ao carregar detalhes: ${res.erro || "Erro desconhecido."}
+            </div>`;
+            title.textContent = "Erro de carregamento";
+            return;
+          }
+        }
+        
+        title.textContent = `Auditoria: ${r.nome_candidato} (${r.comprovativo})`;
+        renderizarAuditReport();
+        
+      } catch (err) {
+        body.innerHTML = `<div style="color: var(--red); padding: 20px; text-align: center; font-weight: bold;">
+          ❌ Erro ao ligar ao servidor. Verifique a ligação à Internet.
+        </div>`;
+        title.textContent = "Erro de rede";
+      }
     }
 
     function selecionarAba(aba) {
