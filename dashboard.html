@@ -391,14 +391,15 @@
       body.innerHTML = "";
       const det = r.detalhe_correcao || {};
 
-      // -- Painel de Deliberação e Retificação do Júri --
+      // -- Painel de Deliberação e Retificação do Júri (Inicialmente Bloqueado) --
       const juriBox = document.createElement("div");
       juriBox.className = "juri-card";
-      juriBox.style.background = "#f0fdf4";
-      juriBox.style.border = "1px solid #bbf7d0";
+      juriBox.style.background = "#f8fafc";
+      juriBox.style.border = "1px solid #cbd5e1";
       juriBox.style.borderRadius = "8px";
       juriBox.style.padding = "16px";
       juriBox.style.marginBottom = "20px";
+      juriBox.style.transition = "all 0.3s ease";
 
       const revInfo = det.revisao_juri || {};
       const isRevisto = !!revInfo.revisto;
@@ -406,12 +407,17 @@
       const xlT10Checked = revInfo.ajuste_excel_t10 || (det.excel && Array.isArray(det.excel) && det.excel[9]?.pts === 0.80 && det.excel[9]?.nota?.includes("Júri"));
 
       juriBox.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid #dcfce7; padding-bottom:8px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid #e2e8f0; padding-bottom:8px;">
           <div style="display:flex; align-items:center; gap:8px;">
             <span style="font-size:18px;">⚖️</span>
-            <b style="color:#166534; font-size:14px;">Deliberação e Retificação do Júri</b>
+            <b id="juriHeaderTitle" style="color:#334155; font-size:14px;">Deliberação e Retificação do Júri</b>
           </div>
-          ${isRevisto ? `<span style="background:#16a34a; color:#fff; font-size:11px; font-weight:bold; padding:3px 10px; border-radius:12px; display:flex; align-items:center; gap:4px;">✓ Prova Revista pelo Júri</span>` : `<span style="background:#e2e8f0; color:#475569; font-size:11px; font-weight:bold; padding:3px 10px; border-radius:12px;">Classificação Original</span>`}
+          <div style="display:flex; align-items:center; gap:8px;">
+            ${isRevisto ? `<span style="background:#16a34a; color:#fff; font-size:11px; font-weight:bold; padding:3px 10px; border-radius:12px;">✓ Prova Revista</span>` : `<span id="juriStatusTag" style="background:#e2e8f0; color:#475569; font-size:11px; font-weight:bold; padding:3px 10px; border-radius:12px;">Bloqueado</span>`}
+            <button id="btnDesbloquearRevisao" class="btn btn-pri" style="background:#16a34a; border-color:#16a34a; font-size:12px; padding:4px 12px; cursor:pointer; display:flex; align-items:center; gap:5px;">
+              <span>🔒 Revisão</span>
+            </button>
+          </div>
         </div>
 
         ${isRevisto ? `
@@ -422,30 +428,63 @@
             <br><b>Classificação Atual Retificada:</b> Word: ${Number(r.nota_word).toFixed(2)} val | Excel: ${Number(r.nota_excel).toFixed(2)} val | Final: <b style="color:#15803d;">${Number(r.nota_final).toFixed(2)} / 8.00 val</b>
           </div>
         ` : `
-          <div style="font-size:12px; color:#4b5563; margin-bottom:12px;">
-            Assinale as tarefas a retificar conforme as deliberações do Júri (Word Tarefa 12 ou Excel Tarefa 10) e clique em Gravar para recalcular a nota automaticamente.
+          <div id="juriNoticeText" style="font-size:12px; color:#64748b; margin-bottom:12px;">
+            Este painel está bloqueado para segurança. Clique no botão verde <b>«Revisão»</b> e introduza o código de autorização para efetuar alterações.
           </div>
         `}
 
-        <div class="juri-actions" style="display:flex; flex-direction:column; gap:10px; margin-bottom:14px; background:#fff; padding:12px; border-radius:6px; border:1px solid #e5e7eb;">
-          <label style="display:flex; align-items:center; gap:10px; font-size:13px; cursor:pointer; color:#1f2937;">
-            <input type="checkbox" id="chkWordT12" ${wT12Checked ? "checked" : ""} style="width:18px; height:18px; cursor:pointer; accent-color:#16a34a;">
-            <span><b>Word — Tarefa 12:</b> Atribuir cotação máxima de <b>+0,15 val</b> (Ordenação da Tabela)</span>
-          </label>
-          <label style="display:flex; align-items:center; gap:10px; font-size:13px; cursor:pointer; color:#1f2937;">
-            <input type="checkbox" id="chkExcelT10" ${xlT10Checked ? "checked" : ""} style="width:18px; height:18px; cursor:pointer; accent-color:#16a34a;">
-            <span><b>Excel — Tarefa 10:</b> Atribuir cotação máxima de <b>+0,80 val</b> (Lógica de Stock F22:F25)</span>
-          </label>
-        </div>
+        <div id="juriFormContainer" style="opacity:0.35; pointer-events:none; filter:grayscale(1); transition:all 0.3s ease;">
+          <div class="juri-actions" style="display:flex; flex-direction:column; gap:10px; margin-bottom:14px; background:#fff; padding:12px; border-radius:6px; border:1px solid #e2e8f0;">
+            <label style="display:flex; align-items:center; gap:10px; font-size:13px; cursor:pointer; color:#1f2937;">
+              <input type="checkbox" id="chkWordT12" ${wT12Checked ? "checked" : ""} style="width:18px; height:18px; cursor:pointer; accent-color:#16a34a;">
+              <span><b>Word — Tarefa 12:</b> Atribuir cotação máxima de <b>+0,15 val</b> (Ordenação da Tabela)</span>
+            </label>
+            <label style="display:flex; align-items:center; gap:10px; font-size:13px; cursor:pointer; color:#1f2937;">
+              <input type="checkbox" id="chkExcelT10" ${xlT10Checked ? "checked" : ""} style="width:18px; height:18px; cursor:pointer; accent-color:#16a34a;">
+              <span><b>Excel — Tarefa 10:</b> Atribuir cotação máxima de <b>+0,80 val</b> (Lógica de Stock F22:F25)</span>
+            </label>
+          </div>
 
-        <div class="juri-actions" style="display:flex; gap:10px; align-items:center;">
-          <input type="text" id="txtMotivoJuri" value="${esc(revInfo.motivo || 'Deliberação do Júri em ata de 04/09/2026')}" placeholder="Motivo / Fundamentação da Deliberação" style="flex:1; padding:8px 12px; border:1px solid #cbd5e1; border-radius:4px; font-size:12px; background:#fff;">
-          <button class="btn btn-pri" id="btnSalvarRevisao" style="background:#16a34a; border-color:#16a34a; font-size:13px; padding:8px 16px; white-space:nowrap; display:flex; align-items:center; gap:6px;">
-            <span>Gravar Retificação</span> 💾
-          </button>
+          <div class="juri-actions" style="display:flex; gap:10px; align-items:center;">
+            <input type="text" id="txtMotivoJuri" value="${esc(revInfo.motivo || 'Deliberação do Júri em ata de 04/09/2026')}" placeholder="Motivo / Fundamentação da Deliberação" style="flex:1; padding:8px 12px; border:1px solid #cbd5e1; border-radius:4px; font-size:12px; background:#fff;">
+            <button class="btn btn-pri" id="btnSalvarRevisao" style="background:#16a34a; border-color:#16a34a; font-size:13px; padding:8px 16px; white-space:nowrap; display:flex; align-items:center; gap:6px;">
+              <span>Gravar Retificação</span> 💾
+            </button>
+          </div>
         </div>
       `;
       body.appendChild(juriBox);
+
+      // Evento de Desbloqueio com Código 4321
+      const btnUnlock = juriBox.querySelector("#btnDesbloquearRevisao");
+      if (btnUnlock) {
+        btnUnlock.onclick = () => {
+          const cod = prompt("Introduza o código do Júri para desbloquear a revisão (PIN: 4321):");
+          if (cod === "4321") {
+            const form = juriBox.querySelector("#juriFormContainer");
+            form.style.opacity = "1";
+            form.style.pointerEvents = "auto";
+            form.style.filter = "none";
+            juriBox.style.background = "#f0fdf4";
+            juriBox.style.borderColor = "#bbf7d0";
+            
+            const title = juriBox.querySelector("#juriHeaderTitle");
+            if (title) title.style.color = "#166534";
+
+            const notice = juriBox.querySelector("#juriNoticeText");
+            if (notice) notice.style.display = "none";
+
+            btnUnlock.style.background = "#0284c7";
+            btnUnlock.style.borderColor = "#0284c7";
+            btnUnlock.innerHTML = "🔓 Desbloqueado";
+            btnUnlock.disabled = true;
+
+            alert("✓ Modo de revisão desbloqueado com sucesso!");
+          } else if (cod !== null) {
+            alert("❌ Código incorreto. O painel permanece bloqueado.");
+          }
+        };
+      }
 
       // Evento de Gravação do Júri
       const btnSalvar = juriBox.querySelector("#btnSalvarRevisao");
