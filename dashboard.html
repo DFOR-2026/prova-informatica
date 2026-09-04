@@ -55,9 +55,9 @@
     .pin-box .err { color: #A62B21; font-size: 13px; margin-bottom: 10px; display: none; }
 
     /* Modal do Detalhe */
-    .veil { position: fixed; inset: 0; background: rgba(22, 35, 43, 0.62); z-index: 500; display: none; align-items: center; justify-content: center; padding: 20px; }
+    .veil { position: fixed; inset: 0; background: rgba(22, 35, 43, 0.62); z-index: 500; display: none; align-items: center; justify-content: center; padding: 12px; }
     .veil.show { display: flex; }
-    .modal { background: var(--paper); width: 100%; max-width: 1200px; max-height: 90vh; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+    .modal { background: var(--paper); width: 96vw; max-width: 1650px; max-height: 95vh; height: 92vh; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
     .modal-head { padding: 20px; border-bottom: 1px solid var(--regra); display: flex; justify-content: space-between; align-items: center; }
     .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
     .modal-foot { padding: 15px 20px; border-top: 1px solid var(--regra); display: flex; justify-content: flex-end; }
@@ -868,17 +868,17 @@
       
       const v = r.respostas?.versao || "A";
       let html = `<div style="margin-bottom:12px; font-weight:bold; font-size:13px; color:#2e7d32; background:#e8f5e9; padding:8px 12px; border-radius:4px; border-left:4px solid #2e7d32; font-family:sans-serif;">Versão da Prova: Versão ${v}</div>`;
-      html += `<div style="overflow-x:auto; background:#fff; border:1px solid #ccc; font-family:sans-serif; font-size:10px; border-radius:4px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">`;
+      html += `<div style="overflow-x:auto; background:#fff; border:1px solid #ccc; font-family:sans-serif; font-size:11px; border-radius:4px; box-shadow:0 2px 8px rgba(0,0,0,0.1); width:100%; box-sizing:border-box;">`;
       html += `<table style="border-collapse:collapse; width:100%; text-align:left; background:#fff; table-layout:fixed;">`;
       html += `<colgroup>`;
-      html += `<col style="width:45px;">`;
       html += `<col style="width:38px;">`;
-      html += `<col style="width:100px;">`;
-      html += `<col style="width:170px;">`;
-      html += `<col style="width:259px;">`;
-      html += `<col style="width:259px;">`;
-      html += `<col style="width:259px;">`;
-      html += `<col style="width:259px;">`;
+      html += `<col style="width:5%;">`;
+      html += `<col style="width:14%;">`;
+      html += `<col style="width:22%;">`;
+      html += `<col style="width:13%;">`;
+      html += `<col style="width:16%;">`;
+      html += `<col style="width:14%;">`;
+      html += `<col style="width:16%;">`;
       html += `</colgroup>`;
       
       // Headers row
