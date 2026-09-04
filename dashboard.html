@@ -80,10 +80,14 @@
     @media print {
       body { background: white; color: black; padding: 0; }
       #pinOverlay, header, .search-box, .container, .modal-foot, .close-btn, .tab-container, .juri-actions { display: none !important; }
-      .veil { position: absolute; background: none; display: block !important; }
-      .modal { max-width: 100%; box-shadow: none; display: block !important; max-height: none; overflow: visible !important; border: none; }
-      .modal-body { overflow: visible !important; max-height: none; padding: 0; }
+      .veil { position: absolute; background: none; display: none !important; }
+      .veil.show { display: block !important; }
+      .modal { max-width: 100% !important; box-shadow: none !important; display: block !important; max-height: none !important; overflow: visible !important; border: none !important; }
+      .modal-body { overflow: visible !important; max-height: none !important; padding: 0 !important; }
       .audit-section h3 { border-bottom: 2px solid #000; color: black; }
+      table.print-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 15px; }
+      table.print-table th, table.print-table td { border: 1px solid #94a3b8; padding: 6px 8px; text-align: left; }
+      table.print-table th { background: #f1f5f9; font-weight: bold; }
     }
   </style>
 </head>
@@ -107,6 +111,9 @@
       <div class="sub">Auditoria e Exportação de Resultados do Teste CMS</div>
     </div>
     <div class="actions">
+      <button class="btn btn-sec" id="btnPrintRevistos" style="border-color:#16a34a; color:#15803d; font-weight:600; display:flex; align-items:center; gap:6px;">
+        <span>Provas Revistas (PDF)</span> 🖨️
+      </button>
       <button class="btn btn-sec" id="btnRefresh">Atualizar ↻</button>
       <button class="btn btn-pri" id="btnExport">Exportar CSV 📥</button>
     </div>
@@ -122,9 +129,11 @@
     <table id="resTable">
       <thead>
         <tr>
+          <th style="width: 50px; text-align: center;">Pos.</th>
           <th>Comprovativo</th>
           <th>Código</th>
           <th>Candidato</th>
+          <th style="text-align: center;">Dia / Turno</th>
           <th>Versão</th>
           <th>Windows (Teórica)</th>
           <th>Word (Prática)</th>
@@ -134,7 +143,7 @@
       </thead>
       <tbody id="tableBody">
         <tr>
-          <td colspan="8" style="text-align: center; color: var(--ink2);">Nenhum resultado carregado.</td>
+          <td colspan="10" style="text-align: center; color: var(--ink2);">Nenhum resultado carregado.</td>
         </tr>
       </tbody>
     </table>
@@ -160,6 +169,26 @@
       <div class="modal-foot" style="display:flex;gap:10px;">
         <button class="btn btn-sec" id="btnPrintAudit">Imprimir Relatório 🖨️</button>
         <button class="btn btn-pri" id="auditCloseBtn">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Lista de Provas Revistas em PDF -->
+  <div class="veil" id="revistosVeil">
+    <div class="modal" style="max-width: 1200px;">
+      <div class="modal-head">
+        <div>
+          <h2 style="margin:0; font-size:18px; color:var(--ink);">Relação Nominal de Provas Revistas pelo Júri</h2>
+          <div style="font-size:12px; color:var(--ink2); margin-top:2px;">Lista oficial de candidatos com retificação de cotações</div>
+        </div>
+        <button class="close-btn" id="revistosClose">×</button>
+      </div>
+      <div class="modal-body" id="revistosBody" style="padding: 20px;">
+        <!-- Inserido dinamicamente via JS -->
+      </div>
+      <div class="modal-foot" style="display:flex; gap:10px;">
+        <button class="btn btn-pri" id="btnConfirmPrintRevistos" style="background:#16a34a; border-color:#16a34a;">Imprimir Lista em PDF 🖨️</button>
+        <button class="btn btn-sec" id="revistosCloseBtn">Fechar</button>
       </div>
     </div>
   </div>
@@ -241,20 +270,34 @@
       );
 
       if (filtrados.length === 0) {
-        body.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--ink2);">Nenhum resultado encontrado.</td></tr>`;
+        body.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--ink2);">Nenhum resultado encontrado.</td></tr>`;
         return;
       }
 
-      filtrados.forEach(r => {
+      filtrados.forEach((r) => {
         const tr = document.createElement("tr");
         tr.onclick = () => mostrarDetalhes(r);
         const v = r.versao || r.respostas?.versao || "A";
-        const isRevisto = r.revisto === "true" || r.revisto === true || r.detalhe_correcao?.revisao_juri?.revisto;
+        const isRevisto = r.revisto === "true" || r.revisto === true || r.revisao_juri?.revisto || r.detalhe_correcao?.revisao_juri?.revisto;
         const badgeRev = isRevisto ? `<span class="badge" style="background:#dcfce7; color:#15803d; border:1px solid #86efac; margin-left:6px; font-size:10px; font-weight:bold; padding:2px 6px;">✓ Revisto</span>` : '';
+        
+        let diaTurnoTxt = "—";
+        if (r.codigos && r.codigos.dia) {
+          const dp = r.codigos.dia.split("-");
+          const diaFormat = dp.length === 3 ? `${dp[2]}/${dp[1]}` : r.codigos.dia;
+          diaTurnoTxt = `${diaFormat} · T${r.codigos.turno || 1}`;
+        }
+
+        // Posição absoluta do ranking
+        const absIndex = resultadosCache.findIndex(item => item.codigo === r.codigo);
+        const posRanking = `${absIndex !== -1 ? absIndex + 1 : 1}.º`;
+
         tr.innerHTML = `
+          <td style="text-align: center; font-weight: bold; color: var(--ink2); font-size: 12px;">${posRanking}</td>
           <td><b>${r.comprovativo}</b></td>
           <td><span class="code-block">${r.codigo}</span></td>
           <td>${r.nome_candidato} ${badgeRev}</td>
+          <td style="text-align: center;"><span style="font-size: 11px; color: var(--ink); background: var(--surface); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--regra); font-weight: 500;">${diaTurnoTxt}</span></td>
           <td><span class="badge ${v === "B" ? "badge-sec" : "badge-pri"}">Versão ${v}</span></td>
           <td>${Number(r.nota_windows).toFixed(2)} val</td>
           <td>${Number(r.nota_word).toFixed(2)} val</td>
@@ -876,31 +919,136 @@
       body.innerHTML = html;
     }
 
-    // Fechar Modal
+    // Fechar Modal de Auditoria Individual
     const fecharModal = () => document.getElementById("auditVeil").classList.remove("show");
     document.getElementById("auditClose").onclick = fecharModal;
     document.getElementById("auditCloseBtn").onclick = fecharModal;
     document.getElementById("btnPrintAudit").onclick = () => window.print();
 
-    // 5. Exportar Tabela para Ficheiro CSV Limpo e Organizado
+    // 5. Abrir Modal de Lista de Provas Revistas em PDF
+    function abrirListaRevistos() {
+      const revistos = resultadosCache.filter(r => r.revisto === "true" || r.revisto === true || r.revisao_juri?.revisto || r.detalhe_correcao?.revisao_juri?.revisto);
+      const body = document.getElementById("revistosBody");
+      
+      if (revistos.length === 0) {
+        body.innerHTML = `
+          <div style="text-align:center; padding:40px; color:var(--ink2);">
+            <span style="font-size:36px;">📋</span>
+            <p style="font-size:15px; margin-top:10px; color:var(--ink);"><b>Nenhuma prova foi revista pelo Júri até ao momento.</b></p>
+            <p style="font-size:13px; max-width:400px; margin:0 auto;">Quando efetuar uma retificação na auditoria de um candidato (com o código 4321), este constará automaticamente desta listagem oficial.</p>
+          </div>
+        `;
+        document.getElementById("btnConfirmPrintRevistos").style.display = "none";
+      } else {
+        document.getElementById("btnConfirmPrintRevistos").style.display = "inline-flex";
+        
+        let html = `
+          <div style="margin-bottom:15px; border-bottom:2px solid var(--accent); padding-bottom:10px;">
+            <div style="font-size:16px; font-weight:bold; color:var(--accent);">CÂMARA MUNICIPAL DE SINTRA</div>
+            <div style="font-size:13px; color:var(--ink); font-weight:600;">Procedimento concursal — Assistente Técnico (Área Funcional Administrativa)</div>
+            <div style="font-size:12px; color:var(--ink2); margin-top:3px;">Anexo à Ata do Júri: Relação Nominal de Provas Retificadas / Revistas (Total: ${revistos.length} candidatos)</div>
+          </div>
+          <table class="print-table" style="width:100%; border-collapse:collapse; font-size:11px; margin-top:10px;">
+            <thead>
+              <tr style="background:#f8fafc;">
+                <th style="padding:6px; border:1px solid #cbd5e1; width:35px; text-align:center;">#</th>
+                <th style="padding:6px; border:1px solid #cbd5e1; text-align:center;">Código</th>
+                <th style="padding:6px; border:1px solid #cbd5e1;">Nome do Candidato</th>
+                <th style="padding:6px; border:1px solid #cbd5e1; text-align:center;">Dia/Turno</th>
+                <th style="padding:6px; border:1px solid #cbd5e1; text-align:center;">Windows</th>
+                <th style="padding:6px; border:1px solid #cbd5e1; text-align:center;">Word (Ant → Rev)</th>
+                <th style="padding:6px; border:1px solid #cbd5e1; text-align:center;">Excel (Ant → Rev)</th>
+                <th style="padding:6px; border:1px solid #cbd5e1; text-align:center; font-weight:bold;">Nota Final (Ant → Rev)</th>
+                <th style="padding:6px; border:1px solid #cbd5e1;">Fundamentação / Deliberação</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
+        revistos.forEach((r, idx) => {
+          const rev = r.revisao_juri || r.detalhe_correcao?.revisao_juri || {};
+          const orig = rev.notas_originais || { nota_word: r.nota_word, nota_excel: r.nota_excel, nota_final: r.nota_final };
+          
+          let diaTurno = "—";
+          if (r.codigos && r.codigos.dia) {
+            const dp = r.codigos.dia.split("-");
+            diaTurno = `${dp[2]}/${dp[1]} · T${r.codigos.turno || 1}`;
+          }
+
+          const wordDiff = (Number(r.nota_word) !== Number(orig.nota_word))
+            ? `<span style="color:#64748b; text-decoration:line-through;">${Number(orig.nota_word).toFixed(2)}</span> → <b style="color:#15803d;">${Number(r.nota_word).toFixed(2)}</b>`
+            : `${Number(r.nota_word).toFixed(2)}`;
+
+          const excelDiff = (Number(r.nota_excel) !== Number(orig.nota_excel))
+            ? `<span style="color:#64748b; text-decoration:line-through;">${Number(orig.nota_excel).toFixed(2)}</span> → <b style="color:#15803d;">${Number(r.nota_excel).toFixed(2)}</b>`
+            : `${Number(r.nota_excel).toFixed(2)}`;
+
+          const finalDiff = (Number(r.nota_final) !== Number(orig.nota_final))
+            ? `<span style="color:#64748b; text-decoration:line-through;">${Number(orig.nota_final).toFixed(2)}</span> → <b style="color:#15803d; font-size:12px;">${Number(r.nota_final).toFixed(2)}</b>`
+            : `<b>${Number(r.nota_final).toFixed(2)}</b>`;
+
+          html += `
+            <tr>
+              <td style="padding:6px; border:1px solid #cbd5e1; text-align:center; font-weight:bold; color:#64748b;">${idx + 1}.º</td>
+              <td style="padding:6px; border:1px solid #cbd5e1; text-align:center;"><span class="code-block">${r.codigo}</span></td>
+              <td style="padding:6px; border:1px solid #cbd5e1; font-weight:500;">${r.nome_candidato}</td>
+              <td style="padding:6px; border:1px solid #cbd5e1; text-align:center;">${diaTurno}</td>
+              <td style="padding:6px; border:1px solid #cbd5e1; text-align:center;">${Number(r.nota_windows).toFixed(2)} val</td>
+              <td style="padding:6px; border:1px solid #cbd5e1; text-align:center;">${wordDiff}</td>
+              <td style="padding:6px; border:1px solid #cbd5e1; text-align:center;">${excelDiff}</td>
+              <td style="padding:6px; border:1px solid #cbd5e1; text-align:center; background:#f0fdf4;">${finalDiff}</td>
+              <td style="padding:6px; border:1px solid #cbd5e1; font-size:11px; color:#334155;">
+                ${esc(rev.motivo || 'Deliberação do Júri')}
+                ${rev.revisto_em ? `<br><small style="color:#64748b;">(${new Date(rev.revisto_em).toLocaleDateString('pt-PT')})</small>` : ''}
+              </td>
+            </tr>
+          `;
+        });
+
+        html += `
+            </tbody>
+          </table>
+          <div style="margin-top:20px; font-size:10px; color:#64748b; text-align:right;">
+            Documento emitido para deliberação do Júri · Plataforma de Avaliação CMS · ${new Date().toLocaleDateString('pt-PT')} ${new Date().toLocaleTimeString('pt-PT')}
+          </div>
+        `;
+        body.innerHTML = html;
+      }
+      
+      document.getElementById("revistosVeil").classList.add("show");
+    }
+
+    // Handlers do Modal de Provas Revistas
+    document.getElementById("btnPrintRevistos").onclick = abrirListaRevistos;
+    const fecharModalRevistos = () => document.getElementById("revistosVeil").classList.remove("show");
+    document.getElementById("revistosClose").onclick = fecharModalRevistos;
+    document.getElementById("revistosCloseBtn").onclick = fecharModalRevistos;
+    document.getElementById("btnConfirmPrintRevistos").onclick = () => window.print();
+
+    // 6. Exportar Tabela para Ficheiro CSV Limpo e Organizado
     document.getElementById("btnExport").onclick = () => {
       if (resultadosCache.length === 0) return;
       
       let csv = "\uFEFF"; // BOM para o Excel ler caracteres em português corretamente
-      csv += "Comprovativo;Codigo;Nome Candidato;Nota Windows;Nota Word;Nota Excel;Nota Final\n";
+      csv += "Posicao;Comprovativo;Codigo;Nome Candidato;Dia;Turno;Versao;Nota Windows;Nota Word;Nota Excel;Nota Final;Revisto\n";
       
-      resultadosCache.forEach(r => {
+      resultadosCache.forEach((r, idx) => {
+        const pos = `${idx + 1}`;
+        const dia = r.codigos?.dia || "";
+        const turno = r.codigos?.turno || "";
+        const v = r.versao || r.respostas?.versao || "A";
         const nWin = Number(r.nota_windows).toFixed(2).replace(".", ",");
         const nWrd = Number(r.nota_word).toFixed(2).replace(".", ",");
         const nXcl = Number(r.nota_excel).toFixed(2).replace(".", ",");
         const nFin = Number(r.nota_final).toFixed(2).replace(".", ",");
-        csv += `${r.comprovativo};${r.codigo};${r.nome_candidato};${nWin};${nWrd};${nXcl};${nFin}\n`;
+        const rev = (r.revisto === "true" || r.revisto === true || r.revisao_juri?.revisto) ? "SIM" : "NAO";
+        csv += `${pos};${r.comprovativo};${r.codigo};"${r.nome_candidato.replace(/"/g, '""')}";${dia};${turno};${v};${nWin};${nWrd};${nXcl};${nFin};${rev}\n`;
       });
 
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.setAttribute("download", `pauta_classificacao_teste.csv`);
+      link.setAttribute("download", `pauta_classificacao_geral_concurso.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
